@@ -1,0 +1,57 @@
+name: Refresh NOTE4 (opt-in)
+
+on:
+  workflow_dispatch:
+    inputs:
+      no_push:
+        description: Fetch and render without contacting ZECTRIX
+        required: true
+        default: true
+        type: boolean
+  # After a successful manual preview and push, forks may opt in to a schedule:
+  # schedule:
+  #   - cron: "17 10 * * 1-5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ibkr-note4-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      IBKR_SOURCE: flex
+      IBKR_FLEX_QUERY_ID: ${{ secrets.IBKR_FLEX_QUERY_ID }}
+      IBKR_FLEX_DAILY_QUERY_ID: ${{ secrets.IBKR_FLEX_DAILY_QUERY_ID }}
+      IBKR_FLEX_TOKEN: ${{ secrets.IBKR_FLEX_TOKEN }}
+      IBKR_FLEX_PERIOD_DAYS: "30"
+      ZECTRIX_API_KEY: ${{ secrets.ZECTRIX_API_KEY }}
+      ZECTRIX_DEVICE_ID: ${{ secrets.ZECTRIX_DEVICE_ID }}
+      HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install .
+      - name: Check required secrets
+        shell: bash
+        run: |
+          test -n "$IBKR_FLEX_QUERY_ID"
+          test -n "$IBKR_FLEX_TOKEN"
+          if [[ "${{ inputs.no_push }}" != "true" ]]; then
+            test -n "$ZECTRIX_API_KEY"
+          fi
+      - name: Fetch, render, and optionally push
+        shell: bash
+        run: |
+          if [[ "${{ inputs.no_push }}" == "true" ]]; then
+            ibkr-note4 run --no-push --output /tmp/ibkr-dashboard.png
+          else
+            ibkr-note4 run --no-dedupe --output /tmp/ibkr-dashboard.png
+          fi

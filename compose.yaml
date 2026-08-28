@@ -1,9 +1,16 @@
 services:
   dashboard:
     build: .
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     env_file:
       - .env
     volumes:
       - ./output:/app/output
       - ./state:/app/state
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
     restart: "no"

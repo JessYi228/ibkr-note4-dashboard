@@ -1,10 +1,12 @@
 [Unit]
-Description=Refresh the IBKR NOTE4 e-paper dashboard hourly
+Description=Refresh the T-1 IBKR NOTE4 dashboard on weekdays
 
 [Timer]
-OnCalendar=hourly
+# Activity Flex data is normally available through the previous business day.
+# A non-round UTC minute also avoids common scheduler load spikes.
+OnCalendar=Mon..Fri *-*-* 10:17:00 UTC
 Persistent=true
-RandomizedDelaySec=90
+RandomizedDelaySec=5m
 
 [Install]
 WantedBy=timers.target
