@@ -1,0 +1,9 @@
+services:
+  dashboard:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+      - ./state:/app/state
+    restart: "no"

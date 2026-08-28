@@ -1,0 +1,17 @@
+[Unit]
+Description=Render and push the IBKR NOTE4 e-paper dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ibkr-note4
+Group=ibkr-note4
+WorkingDirectory=/opt/ibkr-note4-dashboard
+EnvironmentFile=/etc/ibkr-note4-dashboard.env
+ExecStart=/opt/ibkr-note4-dashboard/.venv/bin/ibkr-note4 run
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/ibkr-note4-dashboard/output /opt/ibkr-note4-dashboard/state

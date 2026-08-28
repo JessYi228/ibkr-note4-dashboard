@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh the IBKR NOTE4 e-paper dashboard hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=90
+
+[Install]
+WantedBy=timers.target
