@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 - 2026-08-29
+
+- Pace consecutive Flex `SendRequest` calls above IBKR's one-request-per-second token limit.
+- Retry Flex error 1018 once after a complete one-minute cooldown instead of failing immediately or retrying aggressively.
+
 ## 0.2.0 - 2026-08-28
 
 - Made live execution independent of Codex and disabled all sample-data fallback outside `preview`.

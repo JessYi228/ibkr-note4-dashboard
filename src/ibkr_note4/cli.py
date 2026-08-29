@@ -31,7 +31,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 WIDTH = 400
 HEIGHT = 300
-USER_AGENT = "ibkr-note4-dashboard/0.2"
+USER_AGENT = "ibkr-note4-dashboard/0.2.1"
+FLEX_SEND_MIN_INTERVAL_SECONDS = 1.1
+FLEX_RATE_LIMIT_RETRY_SECONDS = 61.0
 ZECTRIX_KEYCHAIN_SERVICE = "ibkr-zectrix-dashboard/zectrix-api-key"
 IBKR_FLEX_KEYCHAIN_SERVICE = "ibkr-zectrix-dashboard/ibkr-flex-token"
 PACKAGE_ROOT = Path(__file__).resolve().parent
@@ -88,6 +90,10 @@ HEALTHCHECK_URL=
 
 class DashboardError(RuntimeError):
     """Actionable dashboard error with secret-safe text."""
+
+
+class FlexRateLimitError(DashboardError):
+    """IBKR Flex token pacing limit response."""
 
 
 class HTTPStatusError(DashboardError):
@@ -372,7 +378,8 @@ def flex_reference(payload: bytes) -> tuple[str, str]:
     error_code, error_text = flex_response_error(root)
     if error_code or error_text:
         suffix = f" (code {error_code})" if error_code else ""
-        raise DashboardError(f"{error_text}{suffix}")
+        error_type = FlexRateLimitError if error_code == "1018" else DashboardError
+        raise error_type(f"{error_text}{suffix}")
     code = next((node.text for node in root.iter() if xml_local_name(node.tag) == "referencecode"), None)
     if not code:
         raise DashboardError("IBKR Flex did not return a reference code")
@@ -533,6 +540,27 @@ def flex_report_url(base: str, returned_url: str, reference_code: str, token: st
     return f"{endpoint}{separator}{urllib.parse.urlencode({'q': reference_code, 't': token, 'v': '3'})}"
 
 
+_last_flex_send_at = 0.0
+
+
+def request_flex_reference(start_url: str) -> tuple[str, str]:
+    """Start one Flex report while respecting IBKR's per-token pacing limit."""
+    global _last_flex_send_at
+    for attempt in range(2):
+        elapsed = time.monotonic() - _last_flex_send_at
+        if elapsed < FLEX_SEND_MIN_INTERVAL_SECONDS:
+            time.sleep(FLEX_SEND_MIN_INTERVAL_SECONDS - elapsed)
+        payload = request_bytes(start_url, attempts=3)
+        _last_flex_send_at = time.monotonic()
+        try:
+            return flex_reference(payload)
+        except FlexRateLimitError:
+            if attempt:
+                raise
+            time.sleep(FLEX_RATE_LIMIT_RETRY_SECONDS)
+    raise DashboardError("IBKR Flex request did not produce a reference code")
+
+
 def fetch_flex_report(query_id: str, token: str, *, period_days: str = "") -> bytes:
     base = env("IBKR_FLEX_BASE_URL", "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService").rstrip("/")
     require_https_url(base, "IBKR_FLEX_BASE_URL")
@@ -546,7 +574,7 @@ def fetch_flex_report(query_id: str, token: str, *, period_days: str = "") -> by
             raise DashboardError("IBKR_FLEX_PERIOD_DAYS must be an integer from 1 to 365")
         parameters["p"] = str(days)
     start_url = f"{base}/SendRequest?{urllib.parse.urlencode(parameters)}"
-    reference_code, returned_url = flex_reference(request_bytes(start_url, attempts=3))
+    reference_code, returned_url = request_flex_reference(start_url)
     report_url = flex_report_url(base, returned_url, reference_code, token)
     try:
         poll_attempts = max(1, int(env("IBKR_FLEX_POLL_ATTEMPTS", "8")))

@@ -77,6 +77,28 @@ class DashboardTests(unittest.TestCase):
             DASHBOARD.parse_flex_xml(failed)
         self.assertTrue(DASHBOARD.flex_report_is_pending(pending))
 
+    def test_flex_send_rate_limit_waits_one_window_then_retries(self):
+        limited = b"<FlexStatementResponse><Status>Fail</Status><ErrorCode>1018</ErrorCode><ErrorMessage>Too many requests</ErrorMessage></FlexStatementResponse>"
+        accepted = b"<FlexStatementResponse><Status>Success</Status><ReferenceCode>123</ReferenceCode></FlexStatementResponse>"
+        DASHBOARD._last_flex_send_at = 0.0
+        with mock.patch.object(DASHBOARD.time, "monotonic", side_effect=[100.0, 100.1, 161.2, 161.3]):
+            with mock.patch.object(DASHBOARD, "request_bytes", side_effect=[limited, accepted]) as request:
+                with mock.patch.object(DASHBOARD.time, "sleep") as sleep:
+                    reference_code, _ = DASHBOARD.request_flex_reference("https://example.com/SendRequest")
+        self.assertEqual(reference_code, "123")
+        self.assertEqual(request.call_count, 2)
+        sleep.assert_called_once_with(DASHBOARD.FLEX_RATE_LIMIT_RETRY_SECONDS)
+
+    def test_consecutive_flex_send_requests_are_paced(self):
+        accepted = b"<FlexStatementResponse><Status>Success</Status><ReferenceCode>123</ReferenceCode></FlexStatementResponse>"
+        DASHBOARD._last_flex_send_at = 100.0
+        with mock.patch.object(DASHBOARD.time, "monotonic", side_effect=[100.25, 101.35]):
+            with mock.patch.object(DASHBOARD.time, "sleep") as sleep:
+                with mock.patch.object(DASHBOARD, "request_bytes", return_value=accepted):
+                    DASHBOARD.request_flex_reference("https://example.com/SendRequest")
+        sleep.assert_called_once()
+        self.assertAlmostEqual(sleep.call_args.args[0], 0.85)
+
     def test_flex_multiple_statements_are_rejected(self):
         report = b"<FlexQueryResponse><FlexStatements><FlexStatement/><FlexStatement/></FlexStatements></FlexQueryResponse>"
         with self.assertRaises(DASHBOARD.DashboardError):

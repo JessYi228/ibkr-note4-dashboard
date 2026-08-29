@@ -14,6 +14,8 @@ Recommended period: **Last 30 Calendar Days**. The runtime also sends `p=30` by 
 
 The query must return exactly one account statement. Configure one account or one consolidated statement; the runtime refuses to guess between multiple accounts.
 
+The runtime spaces consecutive Flex `SendRequest` calls by more than one second. If IBKR returns pacing error 1018, it waits one complete minute and retries once; it never loops aggressively against the token.
+
 ## Optional daily query
 
 Recommended period: **Last Business Day**. Set its ID as `IBKR_FLEX_DAILY_QUERY_ID`.
