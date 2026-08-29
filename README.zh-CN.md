@@ -278,15 +278,17 @@ systemctl list-timers ibkr-note4-dashboard.timer
 <a id="github-actions"></a>
 ## GitHub Actions：无服务器方案
 
-`.github/workflows/refresh.yml` 默认只允许手动运行，并以 `no_push=true` 开始。
+把真实刷新自动化放在一个**独立的私人部署仓库**中。这个公开源码仓库只运行不接触凭据的 CI。不会自动执行的起始模板位于 [`deploy/github-actions/refresh.yml.example`](deploy/github-actions/refresh.yml.example)；GitHub 不会执行 `.github/workflows/` 以外的文件。
 
-1. 把所需的 Flex 和 ZECTRIX 值加入仓库 Actions Secrets。
-2. 保留 `no_push=true`，先手动运行一次。
-3. 确认日志只报告成功，不包含数值或标识。
-4. 再以 `no_push=false` 运行一次完成第一次推送。
-5. 需要定时刷新时，在自己的私有仓库或 fork 中取消 `schedule` 注释。
+1. 创建一个独立私人仓库，不要使用 fork；公开仓库的 fork 无法保持私有。
+2. 把示例复制为私人仓库中的 `.github/workflows/refresh.yml`。
+3. 把所需 Flex 与 ZECTRIX 值加入私人仓库 Actions Secrets。
+4. 保留 `no_push=true`，先手动运行一次。
+5. 确认日志只报告成功，不包含数值或标识。
+6. 再以 `no_push=false` 运行一次完成第一次推送。
+7. 只有完成这些验证后，才在私人部署仓库中启用 `schedule`。
 
-工作流不上传投资组合图片，也不把 Actions cache 当数据库；30 天历史直接来自 Flex。GitHub 定时任务可能延迟，长期稳定性通常不如 VPS 或 NAS。
+模板会检出固定版本的公开源码，不上传投资组合图片，也不把 Actions cache 当数据库；30 天历史直接来自 Flex。GitHub 定时任务可能延迟，长期稳定性通常不如 VPS 或 NAS。
 
 ## 常用配置
 
@@ -338,7 +340,8 @@ systemctl list-timers ibkr-note4-dashboard.timer
 ├── tests/                            # 合成测试；不做真实推送
 ├── docs/                             # Flex、ZECTRIX 与 README 资源
 ├── deploy/systemd/                   # Linux service/timer 模板
-├── .github/workflows/                # CI 与可选刷新任务
+├── deploy/github-actions/            # 不自动执行的私人部署 workflow 示例
+├── .github/workflows/                # 仅无凭据公开 CI
 ├── .env.example                      # 不含秘密的完整配置模板
 ├── Dockerfile
 └── compose.yaml

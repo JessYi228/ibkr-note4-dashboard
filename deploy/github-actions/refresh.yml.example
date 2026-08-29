@@ -1,4 +1,4 @@
-name: Refresh NOTE4 (opt-in)
+name: Refresh NOTE4 (private deployment)
 
 on:
   workflow_dispatch:
@@ -8,7 +8,8 @@ on:
         required: true
         default: true
         type: boolean
-  # After a successful manual preview and push, forks may opt in to a schedule:
+  # Enable only after one successful no-push run, image review, one explicitly
+  # authorized live push, and confirmation of the physical NOTE4 refresh.
   # schedule:
   #   - cron: "17 10 * * 1-5"
 
@@ -33,24 +34,31 @@ jobs:
       ZECTRIX_DEVICE_ID: ${{ secrets.ZECTRIX_DEVICE_ID }}
       HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out the reviewed public release
+        uses: actions/checkout@v4
+        with:
+          repository: JessYi228/ibkr-note4-dashboard
+          ref: v0.2.0
+          path: app
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install .
-      - name: Check required secrets
+          cache-dependency-path: app/pyproject.toml
+      - name: Install the pinned release
+        run: python -m pip install ./app
+      - name: Check required secrets without printing them
         shell: bash
         run: |
           test -n "$IBKR_FLEX_QUERY_ID"
           test -n "$IBKR_FLEX_TOKEN"
-          if [[ "${{ inputs.no_push }}" != "true" ]]; then
+          if [[ "${{ github.event_name }}" != "workflow_dispatch" || "${{ inputs.no_push }}" != "true" ]]; then
             test -n "$ZECTRIX_API_KEY"
           fi
       - name: Fetch, render, and optionally push
         shell: bash
         run: |
-          if [[ "${{ inputs.no_push }}" == "true" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.no_push }}" == "true" ]]; then
             ibkr-note4 run --no-push --output /tmp/ibkr-dashboard.png
           else
             ibkr-note4 run --no-dedupe --output /tmp/ibkr-dashboard.png

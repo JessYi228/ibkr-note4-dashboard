@@ -278,15 +278,17 @@ The supplied timer runs on weekdays at `10:17 UTC` with up to five minutes of ra
 <a id="github-actions"></a>
 ## GitHub Actions: no-server option
 
-`.github/workflows/refresh.yml` is manual-only by default and starts with `no_push=true`.
+Keep live refresh automation in a **separate private deployment repository**. This public source repository intentionally runs credential-free CI only. An inert starting template is available at [`deploy/github-actions/refresh.yml.example`](deploy/github-actions/refresh.yml.example); GitHub does not execute files outside `.github/workflows/`.
 
-1. Add the required Flex and ZECTRIX values as repository Actions secrets.
-2. Run the workflow manually with `no_push=true`.
-3. Confirm that the log reports success without values or identifiers.
-4. Run once with `no_push=false` for the first delivery.
-5. To schedule it, uncomment `schedule` in your own private repository or fork.
+1. Create an independent private repository rather than a fork; public forks cannot be private.
+2. Copy the example to `.github/workflows/refresh.yml` in that private repository.
+3. Add the required Flex and ZECTRIX values as private repository Actions secrets.
+4. Run the workflow manually with `no_push=true`.
+5. Confirm that the log reports success without values or identifiers.
+6. Run once with `no_push=false` for the first delivery.
+7. Only then enable `schedule` in the private deployment repository.
 
-The workflow does not upload portfolio images and does not use Actions cache as a database; the 30-day history comes from Flex. Scheduled Actions may be delayed, so a VPS or NAS is usually more dependable.
+The template checks out a pinned public release, does not upload portfolio images, and does not use Actions cache as a database; the 30-day history comes from Flex. Scheduled Actions may be delayed, so a VPS or NAS is usually more dependable.
 
 ## Configuration reference
 
@@ -338,7 +340,8 @@ Review [SECURITY.md](SECURITY.md) before deployment.
 ├── tests/                            # synthetic tests; never performs a live push
 ├── docs/                             # Flex, ZECTRIX, and README assets
 ├── deploy/systemd/                   # Linux service/timer templates
-├── .github/workflows/                # CI and opt-in refresh workflow
+├── deploy/github-actions/            # inert private-deployment workflow example
+├── .github/workflows/                # credential-free public CI only
 ├── .env.example                      # complete secret-free configuration template
 ├── Dockerfile
 └── compose.yaml
