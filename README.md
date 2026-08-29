@@ -65,8 +65,24 @@ The runtime:
 | Linux host with native service management | Flex + systemd | [systemd setup](#systemd) |
 | No server available | Flex + GitHub Actions | [GitHub Actions setup](#github-actions) |
 | Near-real-time interactive use | Client Portal Gateway | [Client Portal setup](#client-portal) |
+| Half-hour US-session refreshes with a connected IBKR account | Optional ChatGPT/Codex companion plugin (not bundled here) | [Refresh windows](#refresh-windows) |
 
 For unattended use, start with **IBKR Flex + Docker Compose**. Every path should still follow the same safety order: local preview → live no-push render → image review → first push.
+
+<a id="refresh-windows"></a>
+## Data freshness and refresh windows
+
+The available refresh time depends on the IBKR source. A scheduler can start a run more often, but it cannot make report-based Flex data become intraday data.
+
+| Source or mode | Data freshness | Practical schedule |
+| :--- | :--- | :--- |
+| Flex Web Service | Report-based, generally **T-1 / previous business day** | The supplied systemd timer runs once on weekdays at `10:17 UTC`, with up to five minutes of randomized delay. More frequent polling is normally unnecessary. |
+| Client Portal Gateway | Near real time while the gateway session is authenticated | Intraday scheduling is possible, but IBKR requires regular interactive browser reauthentication, so this is not a fully unattended VPS path. |
+| Optional ChatGPT/Codex companion plugin | Current read-only data from a connected IBKR account | A weekday schedule can run every 30 minutes from `09:30` through `16:00` in `America/New_York`—14 runs per regular session. The local app and IBKR connection must be available at run time. |
+
+Using `America/New_York` makes daylight-saving changes automatic: the half-hour window is normally **21:30–04:00 China Standard Time during US daylight time** and **22:30–05:00 during US standard time**, crossing into the next calendar day in China. This weekday window does not by itself detect US market holidays or early closes. Unchanged dashboard data is deduplicated and may be skipped instead of being pushed again.
+
+The companion-plugin workflow is optional and separate from this standalone repository. This package continues to run without ChatGPT, Codex, or an LLM.
 
 <a id="local-python"></a>
 ## 5-minute local preview

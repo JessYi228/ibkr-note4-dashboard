@@ -65,8 +65,24 @@ flowchart TB
 | 熟悉 Linux 服务管理 | Flex + systemd | [systemd 配置](#systemd) |
 | 没有服务器 | Flex + GitHub Actions | [GitHub Actions 配置](#github-actions) |
 | 需要接近实时的交互使用 | Client Portal Gateway | [Client Portal 配置](#client-portal) |
+| 已连接 IBKR，希望美股盘中每半小时刷新 | 可选 ChatGPT/Codex 配套插件（本仓库不包含） | [数据时效与可更新时间](#refresh-windows) |
 
 无人值守时推荐 **IBKR Flex + Docker Compose**。无论选择哪种方式，都按相同的安全顺序执行：本地预览 → 真实数据 no-push 渲染 → 检查图片 → 第一次推送。
+
+<a id="refresh-windows"></a>
+## 数据时效与可更新时间
+
+能更新到什么时间的数据，取决于 IBKR 数据源。调度器可以更频繁地启动任务，但不能把报表型的 Flex 数据变成盘中实时数据。
+
+| 数据源或模式 | 数据时效 | 实用调度方式 |
+| :--- | :--- | :--- |
+| Flex Web Service | 报表数据，通常是 **T-1 / 上一个交易日** | 仓库自带的 systemd timer 默认在工作日 `10:17 UTC` 运行一次，并带最多 5 分钟随机延迟；通常没有必要高频轮询。 |
+| Client Portal Gateway | Gateway 会话已认证时可接近实时 | 可以安排盘中刷新，但 IBKR 要求定期在浏览器中重新认证，因此不适合完全无人值守的 VPS。 |
+| 可选 ChatGPT/Codex 配套插件 | 从已连接的 IBKR 账户读取当前只读数据 | 可在工作日按纽约时间 `09:30` 到 `16:00` 每 30 分钟运行一次，即常规交易时段每天 14 次；每次运行时本机应用和 IBKR 连接都必须可用。 |
+
+使用 `America/New_York` 时会自动跟随美国夏令时和冬令时：换算为北京时间，夏令时通常是 **21:30–次日 04:00**，冬令时通常是 **22:30–次日 05:00**。这个工作日时间窗本身不会识别美国休市日或提前收盘日。若画面数据没有变化，去重机制可能跳过重复推送。
+
+配套插件是可选方案，与本独立仓库分开；本项目本身仍然不依赖 ChatGPT、Codex 或 LLM。
 
 <a id="local-python"></a>
 ## 5 分钟本地预览
