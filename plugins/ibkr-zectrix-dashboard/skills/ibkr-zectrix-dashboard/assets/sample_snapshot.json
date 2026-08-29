@@ -1,0 +1,76 @@
+{
+  "as_of": "2026-08-28T15:30:00+08:00",
+  "source": "sample",
+  "currency": "USD",
+  "net_liquidation": 128540.72,
+  "cash": 18420.55,
+  "buying_power": 96210.40,
+  "daily_pnl": 842.18,
+  "unrealized_pnl": 6214.43,
+  "realized_pnl": 311.25,
+  "history": [
+    124200.0,
+    124920.0,
+    124610.0,
+    125700.0,
+    126150.0,
+    125880.0,
+    127220.0,
+    128540.72
+  ],
+  "nav_history": [
+    124200.0,
+    124920.0,
+    124610.0,
+    125700.0,
+    126150.0,
+    125880.0,
+    127220.0,
+    128540.72
+  ],
+  "return_history": [
+    0.0,
+    0.0058,
+    0.0033,
+    0.0121,
+    0.0157,
+    0.0135,
+    0.0243,
+    0.0349
+  ],
+  "trend_period": "30 DAYS",
+  "positions": [
+    {
+      "symbol": "AAPL",
+      "quantity": 80,
+      "market_price": 231.42,
+      "market_value": 18513.6,
+      "daily_pnl": 286.4,
+      "unrealized_pnl": 1821.2
+    },
+    {
+      "symbol": "NVDA",
+      "quantity": 60,
+      "market_price": 181.75,
+      "market_value": 10905.0,
+      "daily_pnl": 198.6,
+      "unrealized_pnl": 1438.5
+    },
+    {
+      "symbol": "MSFT",
+      "quantity": 25,
+      "market_price": 513.28,
+      "market_value": 12832.0,
+      "daily_pnl": -91.25,
+      "unrealized_pnl": 925.75
+    },
+    {
+      "symbol": "VOO",
+      "quantity": 30,
+      "market_price": 602.16,
+      "market_value": 18064.8,
+      "daily_pnl": 144.0,
+      "unrealized_pnl": 1214.1
+    }
+  ]
+}

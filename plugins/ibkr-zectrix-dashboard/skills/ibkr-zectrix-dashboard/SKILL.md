@@ -5,7 +5,9 @@ description: Configure, preview, refresh, schedule, validate, or deploy a read-o
 
 # IBKR ZECTRIX Dashboard
 
-Use the bundled `scripts/ibkr_zectrix_dashboard.py`. Resolve its path from this plugin package; never assume a user-specific absolute path.
+Use the `scripts/ibkr_zectrix_dashboard.py` bundled inside this skill. Resolve paths from the directory containing this `SKILL.md`; never assume a user-specific absolute path or depend on files outside this skill bundle.
+
+Before the first preview in an interactive session, verify that Pillow is importable. If it is missing, read [references/runtime.md](references/runtime.md), report the missing dependency, and obtain authorization before installing it. Never install dependencies during an unattended refresh.
 
 ## Non-negotiable safety boundaries
 
@@ -16,6 +18,18 @@ Use the bundled `scripts/ibkr_zectrix_dashboard.py`. Resolve its path from this 
 - Store secrets only in the user's macOS Keychain or inject them at runtime from a protected local environment file or cloud secret manager.
 - Preview the 400 x 300 image before the first live push. Do not silently widen permissions or change the selected device.
 - In relay or automation mode, never use sample or stale data after any read, authentication, rendering, or delivery failure.
+
+## Reproducible sample preview
+
+The sample path requires no accounts, credentials, network access, or physical device. Use it for installation checks and reviewer testing:
+
+```bash
+python3 scripts/ibkr_zectrix_dashboard.py preview \
+  --input assets/sample_snapshot.json \
+  --output output/sample-preview.png
+```
+
+Confirm that the result is a 400 x 300 1-bit PNG before attempting any configured data source.
 
 ## First-run configuration
 
@@ -45,14 +59,16 @@ On later runs, read and honor the saved preferences. Do not ask the same setup q
 
 ## Data sources
 
-- `codex_ibkr`: use only when a connected read-only Interactive Brokers plugin is available. This is preferred for current local/recurring data.
+- `codex_ibkr`: use only when a separately installed and authenticated read-only Interactive Brokers plugin exposes all four calls listed below. It is optional and is not bundled with this skill.
 - `flex`: unattended report-based VPS/NAS data, generally T-1 rather than intraday.
 - `client_portal`: near-real-time data while the local gateway is authenticated; periodic browser reauthentication is required.
 - `json`: explicit sanitized input for development or a custom adapter.
 
 ## Connected IBKR relay
 
-Use only these read calls when the connected IBKR plugin provides them:
+First confirm that the separately installed IBKR plugin exposes every call below. If any call is unavailable, stop and offer the credential-free sample preview or another explicitly configured data source; do not invent a tool or claim that the dependency is bundled.
+
+Use only these read calls when they are available:
 
 - `get_account_summary`
 - `get_account_positions`

@@ -1,7 +1,7 @@
 {
   "name": "ibkr-zectrix-dashboard",
-  "version": "0.2.0",
-  "description": "Configure and run a secret-safe, read-only IBKR portfolio dashboard for ZECTRIX NOTE4.",
+  "version": "0.2.1",
+  "description": "Configure and run an independent, secret-safe, read-only portfolio dashboard for ZECTRIX NOTE4.",
   "author": {
     "name": "JessYi228",
     "url": "https://github.com/JessYi228"
@@ -13,8 +13,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "IBKR ZECTRIX Dashboard",
-    "shortDescription": "Refresh a read-only IBKR dashboard on NOTE4.",
-    "longDescription": "Renders a 400x300 monochrome portfolio dashboard, remembers only non-secret preferences, and reads credentials from the user's Keychain or runtime secret environment.",
+    "shortDescription": "Preview and refresh a read-only NOTE4 portfolio dashboard.",
+    "longDescription": "Independently renders a 400x300 monochrome portfolio dashboard, remembers only non-secret preferences, and reads credentials from the user's Keychain or runtime secret environment. It never places, changes, or cancels trades.",
     "developerName": "JessYi228",
     "category": "Finance",
     "capabilities": [
@@ -24,11 +24,16 @@
     ],
     "websiteURL": "https://github.com/JessYi228/ibkr-note4-dashboard",
     "privacyPolicyURL": "https://github.com/JessYi228/ibkr-note4-dashboard/blob/main/plugins/ibkr-zectrix-dashboard/PRIVACY.md",
-    "termsOfServiceURL": "https://github.com/JessYi228/ibkr-note4-dashboard/blob/main/LICENSE",
+    "termsOfServiceURL": "https://github.com/JessYi228/ibkr-note4-dashboard/blob/main/plugins/ibkr-zectrix-dashboard/TERMS.md",
     "defaultPrompt": [
+      "Create a credential-free sample preview of the NOTE4 dashboard.",
       "Configure my IBKR NOTE4 dashboard without exposing secrets.",
       "Preview my IBKR portfolio dashboard before pushing it.",
       "Refresh my NOTE4 using my remembered safe settings."
-    ]
+    ],
+    "brandColor": "#087A55",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png",
+    "screenshots": ["./assets/dashboard-preview.png"]
   }
 }

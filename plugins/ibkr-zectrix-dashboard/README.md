@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-A public, read-only Codex plugin for rendering an Interactive Brokers portfolio as a 400 x 300 monochrome dashboard and optionally sending a reviewed image to ZECTRIX NOTE4.
+A public, read-only plugin for rendering an Interactive Brokers portfolio as a 400 x 300 monochrome dashboard and optionally sending a reviewed image to ZECTRIX NOTE4. It is independently developed and is not affiliated with, endorsed by, or sponsored by Interactive Brokers or ZECTRIX.
 
 The plugin remembers non-secret choices so later runs can continue without repeating setup. Credentials remain in storage selected and controlled by each user.
 
@@ -31,6 +31,8 @@ Environment mode works with local mode-`0600` service files, GitHub Actions Secr
 ## First setup
 
 Do not paste API keys or tokens into chat. Ask the plugin to configure the dashboard, choose the data source and secret backend, then let it save only those choices:
+
+The bundled renderer requires Python 3.11 or newer and Pillow 9.4 through 11.x. Check first with `python3 -c "import PIL; print(PIL.__version__)"`. If Pillow is missing, review and install the pinned range from `skills/ibkr-zectrix-dashboard/requirements.txt` only with the user's authorization.
 
 ```bash
 python3 scripts/ibkr_zectrix_dashboard.py configure \
@@ -71,3 +73,5 @@ python3 scripts/ibkr_zectrix_dashboard.py run --no-push
 Review the first real image before authorizing delivery. Scheduled runs may reuse the saved preferences, but must stop rather than use sample or stale data when authentication or data retrieval fails.
 
 See [PRIVACY.md](PRIVACY.md) for the data-handling policy. This plugin is informational software and never places, modifies, or cancels orders.
+
+Support is available through the [public issue tracker](https://github.com/JessYi228/ibkr-note4-dashboard/issues). See [TERMS.md](TERMS.md) for the terms of use.

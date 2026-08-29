@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-这是一个可公开发布、只读的 Codex 插件：把 Interactive Brokers 投资组合渲染成 400 x 300 黑白仪表盘，并可将用户确认过的图片发送到 ZECTRIX NOTE4。
+这是一个可公开发布、只读的插件：把 Interactive Brokers 投资组合渲染成 400 x 300 黑白仪表盘，并可将用户确认过的图片发送到 ZECTRIX NOTE4。本项目为独立开发，与 Interactive Brokers 或 ZECTRIX 不存在隶属、背书或赞助关系。
 
 插件会记住非敏感选项，后续运行不需要反复配置；真正的凭据始终保存在每位用户自己选择和控制的位置。
 
@@ -31,6 +31,8 @@
 ## 首次配置
 
 不要把 API key 或 token 粘贴到聊天里。让插件询问数据源和密钥保存方式，然后只保存这些非敏感选项：
+
+渲染器要求 Python 3.11 或更高版本，以及 Pillow 9.4–11.x。先运行 `python3 -c "import PIL; print(PIL.__version__)"` 检查；若缺失，只能在获得用户授权后按 `skills/ibkr-zectrix-dashboard/requirements.txt` 安装，定时任务不得自行安装依赖。
 
 ```bash
 python3 scripts/ibkr_zectrix_dashboard.py configure \
@@ -70,4 +72,4 @@ python3 scripts/ibkr_zectrix_dashboard.py run --no-push
 
 第一次真实推送前必须检查图片。定时运行可以复用已经记住的选项，但认证或读取失败时必须停止，不能改用样例或旧数据。
 
-数据处理规则见 [PRIVACY.md](PRIVACY.md)。本插件只用于信息展示，绝不会下单、改单或撤单。
+数据处理规则见 [PRIVACY.md](PRIVACY.md)，使用条款见 [TERMS.md](TERMS.md)，支持入口为 [GitHub Issues](https://github.com/JessYi228/ibkr-note4-dashboard/issues)。本插件只用于信息展示，绝不会下单、改单或撤单。

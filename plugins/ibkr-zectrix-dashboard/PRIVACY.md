@@ -14,11 +14,11 @@ The plugin does not ask users to send credentials through chat and does not stor
 
 ## Stored data
 
-The optional preferences file contains only non-secret choices such as data source, secret backend, timezone, currency, page ID, and maximum displayed positions. It is written with private file permissions where supported. Dedupe state contains only a SHA-256 fingerprint and push timestamp. Rendered dashboard images and any optional local history remain in storage controlled by the user.
+The optional preferences file contains only non-secret choices such as data source, secret backend, timezone, currency, page ID, and maximum displayed positions. Preferences, rendered dashboards, local NAV history, and dedupe state are written with owner-only `0600` file permissions on POSIX systems; newly created state and output directories use `0700`. Dedupe state contains only a SHA-256 fingerprint and push timestamp. Rendered dashboard images and any optional local history remain in storage controlled by the user.
 
 ## Network requests
 
-When enabled by the user, the plugin may contact Interactive Brokers data services and the ZECTRIX Open API. The plugin does not operate a developer-controlled analytics or data-collection backend.
+When enabled by the user, the plugin may send requests to Interactive Brokers data services to retrieve portfolio information and to the ZECTRIX Open API to list the user's devices or deliver the rendered image. Those providers receive the request data required for their respective services. The plugin does not operate a developer-controlled analytics or data-collection backend and does not sell or share portfolio data for advertising.
 
 ## Retention and deletion
 
@@ -26,4 +26,4 @@ The developer does not receive or retain user portfolio data. Users control loca
 
 ## Contact
 
-Report privacy or security issues through the repository's GitHub issue tracker without including credentials, identifiers, or portfolio data.
+Report privacy or security issues through the repository's public GitHub issue tracker at https://github.com/JessYi228/ibkr-note4-dashboard/issues without including credentials, identifiers, or portfolio data.

@@ -11,7 +11,10 @@ from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("dashboard", ROOT / "scripts" / "ibkr_zectrix_dashboard.py")
+SKILL_ROOT = ROOT / "skills" / "ibkr-zectrix-dashboard"
+SCRIPT = SKILL_ROOT / "scripts" / "ibkr_zectrix_dashboard.py"
+SAMPLE = SKILL_ROOT / "assets" / "sample_snapshot.json"
+SPEC = importlib.util.spec_from_file_location("dashboard", SCRIPT)
 DASHBOARD = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(DASHBOARD)
@@ -107,7 +110,7 @@ class DashboardTests(unittest.TestCase):
                 self.assertNotIn("not-for-output", rendered)
 
     def test_sample_normalizes_and_renders_exact_size(self):
-        payload = json.loads((ROOT / "assets" / "sample_snapshot.json").read_text())
+        payload = json.loads(SAMPLE.read_text())
         snapshot = DASHBOARD.normalize_snapshot(payload, "test")
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "preview.png"
@@ -160,6 +163,12 @@ class DashboardTests(unittest.TestCase):
             "UTC+8 08/28 16:00",
         )
 
+    def test_display_timestamp_uses_configured_timezone_offset(self):
+        self.assertEqual(
+            DASHBOARD.display_timestamp("2026-08-28T08:00:00Z", "America/New_York"),
+            "UTC-4 08/28 04:00",
+        )
+
     def test_small_eight_uses_unambiguous_pixel_glyph(self):
         image = DASHBOARD.Image.new("L", (20, 20), 255)
         draw = DASHBOARD.ImageDraw.Draw(image)
@@ -182,7 +191,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(rows[3][0], "0")
 
     def test_nav_chart_has_full_frame_and_lower_table(self):
-        payload = json.loads((ROOT / "assets" / "sample_snapshot.json").read_text())
+        payload = json.loads(SAMPLE.read_text())
         snapshot = DASHBOARD.normalize_snapshot(payload, "test")
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "preview.png"
@@ -265,9 +274,44 @@ class DashboardTests(unittest.TestCase):
                 saved = json.loads(state.read_text(encoding="utf-8"))
                 self.assertEqual(set(saved), {"sha256", "pushed_at"})
                 self.assertNotIn("ABC", state.read_text(encoding="utf-8"))
+                if os.name == "posix":
+                    self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+                    self.assertEqual(state.stat().st_mode & 0o777, 0o600)
         finally:
             DASHBOARD.push_zectrix = previous_push
             DASHBOARD.sys.stdin = previous_stdin
+
+    def test_history_and_dashboard_files_are_private(self):
+        payload = json.loads(SAMPLE.read_text())
+        snapshot = DASHBOARD.normalize_snapshot(payload, "sample")
+        with tempfile.TemporaryDirectory() as directory:
+            history_path = Path(directory) / "state" / "history.json"
+            output_path = Path(directory) / "output" / "dashboard.png"
+            DASHBOARD.append_history(snapshot, history_path)
+            DASHBOARD.render(snapshot, output_path, snapshot["history"])
+            if os.name == "posix":
+                self.assertEqual(history_path.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(output_path.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(history_path.parent.stat().st_mode & 0o777, 0o700)
+                self.assertEqual(output_path.parent.stat().st_mode & 0o777, 0o700)
+
+    def test_public_skill_bundle_contains_every_runtime_resource(self):
+        self.assertTrue(SCRIPT.is_file())
+        self.assertTrue(SAMPLE.is_file())
+        self.assertTrue((SKILL_ROOT / "requirements.txt").is_file())
+        self.assertTrue((SKILL_ROOT / "references" / "runtime.md").is_file())
+
+    def test_public_listing_assets_and_legal_documents_exist(self):
+        manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text())
+        interface = manifest["interface"]
+        for field in ("logo", "composerIcon"):
+            self.assertTrue((ROOT / interface[field].removeprefix("./")).is_file())
+        for screenshot in interface["screenshots"]:
+            self.assertTrue((ROOT / screenshot.removeprefix("./")).is_file())
+        self.assertTrue((ROOT / "PRIVACY.md").is_file())
+        self.assertTrue((ROOT / "TERMS.md").is_file())
+        self.assertTrue((ROOT / "SUBMISSION.md").is_file())
+        self.assertIn("/TERMS.md", interface["termsOfServiceURL"])
 
 
 if __name__ == "__main__":
