@@ -1,0 +1,34 @@
+{
+  "name": "ibkr-zectrix-dashboard",
+  "version": "0.2.0",
+  "description": "Configure and run a secret-safe, read-only IBKR portfolio dashboard for ZECTRIX NOTE4.",
+  "author": {
+    "name": "JessYi228",
+    "url": "https://github.com/JessYi228"
+  },
+  "homepage": "https://github.com/JessYi228/ibkr-note4-dashboard/tree/main/plugins/ibkr-zectrix-dashboard",
+  "repository": "https://github.com/JessYi228/ibkr-note4-dashboard",
+  "license": "MIT",
+  "keywords": ["ibkr", "zectrix", "note4", "portfolio", "e-paper"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "IBKR ZECTRIX Dashboard",
+    "shortDescription": "Refresh a read-only IBKR dashboard on NOTE4.",
+    "longDescription": "Renders a 400x300 monochrome portfolio dashboard, remembers only non-secret preferences, and reads credentials from the user's Keychain or runtime secret environment.",
+    "developerName": "JessYi228",
+    "category": "Finance",
+    "capabilities": [
+      "read-only portfolio dashboard",
+      "secret-safe configuration",
+      "ZECTRIX NOTE4 delivery"
+    ],
+    "websiteURL": "https://github.com/JessYi228/ibkr-note4-dashboard",
+    "privacyPolicyURL": "https://github.com/JessYi228/ibkr-note4-dashboard/blob/main/plugins/ibkr-zectrix-dashboard/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/JessYi228/ibkr-note4-dashboard/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Configure my IBKR NOTE4 dashboard without exposing secrets.",
+      "Preview my IBKR portfolio dashboard before pushing it.",
+      "Refresh my NOTE4 using my remembered safe settings."
+    ]
+  }
+}

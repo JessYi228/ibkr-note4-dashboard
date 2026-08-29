@@ -65,7 +65,7 @@ flowchart TB
 | 熟悉 Linux 服务管理 | Flex + systemd | [systemd 配置](#systemd) |
 | 没有服务器 | Flex + GitHub Actions | [GitHub Actions 配置](#github-actions) |
 | 需要接近实时的交互使用 | Client Portal Gateway | [Client Portal 配置](#client-portal) |
-| 已连接 IBKR，希望美股盘中每半小时刷新 | 可选 ChatGPT/Codex 配套插件（本仓库不包含） | [数据时效与可更新时间](#refresh-windows) |
+| 已连接 IBKR，希望美股盘中每半小时刷新 | 可选 ChatGPT/Codex 配套插件 | [插件配置](plugins/ibkr-zectrix-dashboard/README.zh-CN.md) |
 
 无人值守时推荐 **IBKR Flex + Docker Compose**。无论选择哪种方式，都按相同的安全顺序执行：本地预览 → 真实数据 no-push 渲染 → 检查图片 → 第一次推送。
 
@@ -82,7 +82,7 @@ flowchart TB
 
 使用 `America/New_York` 时会自动跟随美国夏令时和冬令时：换算为北京时间，夏令时通常是 **21:30–次日 04:00**，冬令时通常是 **22:30–次日 05:00**。这个工作日时间窗本身不会识别美国休市日或提前收盘日。若画面数据没有变化，去重机制可能跳过重复推送。
 
-配套插件是可选方案，与本独立仓库分开；本项目本身仍然不依赖 ChatGPT、Codex 或 LLM。
+可选配套插件的公开源码位于 [`plugins/ibkr-zectrix-dashboard/`](plugins/ibkr-zectrix-dashboard/)：它只记住非敏感选项，每位用户把 API key/token 保存在自己的 macOS Keychain，或由受保护的本地/云端 Secret 环境注入。独立运行时本身仍然不依赖 ChatGPT、Codex 或 LLM。
 
 <a id="local-python"></a>
 ## 5 分钟本地预览

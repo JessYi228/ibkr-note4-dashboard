@@ -65,7 +65,7 @@ The runtime:
 | Linux host with native service management | Flex + systemd | [systemd setup](#systemd) |
 | No server available | Flex + GitHub Actions | [GitHub Actions setup](#github-actions) |
 | Near-real-time interactive use | Client Portal Gateway | [Client Portal setup](#client-portal) |
-| Half-hour US-session refreshes with a connected IBKR account | Optional ChatGPT/Codex companion plugin (not bundled here) | [Refresh windows](#refresh-windows) |
+| Half-hour US-session refreshes with a connected IBKR account | Optional ChatGPT/Codex companion plugin | [Plugin setup](plugins/ibkr-zectrix-dashboard/README.md) |
 
 For unattended use, start with **IBKR Flex + Docker Compose**. Every path should still follow the same safety order: local preview → live no-push render → image review → first push.
 
@@ -82,7 +82,7 @@ The available refresh time depends on the IBKR source. A scheduler can start a r
 
 Using `America/New_York` makes daylight-saving changes automatic: the half-hour window is normally **21:30–04:00 China Standard Time during US daylight time** and **22:30–05:00 during US standard time**, crossing into the next calendar day in China. This weekday window does not by itself detect US market holidays or early closes. Unchanged dashboard data is deduplicated and may be skipped instead of being pushed again.
 
-The companion-plugin workflow is optional and separate from this standalone repository. This package continues to run without ChatGPT, Codex, or an LLM.
+The optional companion plugin is published under [`plugins/ibkr-zectrix-dashboard/`](plugins/ibkr-zectrix-dashboard/). It remembers only non-secret choices; each user keeps API keys and tokens in their own macOS Keychain or injects them from a protected local/cloud secret environment. The standalone runtime continues to work without ChatGPT, Codex, or an LLM.
 
 <a id="local-python"></a>
 ## 5-minute local preview
