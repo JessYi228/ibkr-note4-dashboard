@@ -12,7 +12,7 @@ This file is the source of truth for the public submission form. It contains no 
 - **Privacy:** https://github.com/JessYi228/ibkr-note4-dashboard/blob/main/plugins/ibkr-zectrix-dashboard/PRIVACY.md
 - **Terms:** https://github.com/JessYi228/ibkr-note4-dashboard/blob/main/plugins/ibkr-zectrix-dashboard/TERMS.md
 - **Logo:** `assets/logo.png`
-- **Screenshot:** `assets/dashboard-preview.png` (synthetic data)
+- **Public preview reference:** `assets/dashboard-preview.png` (synthetic data; kept in the repository and excluded from the Skills-only upload)
 
 Suggested long description:
 
@@ -20,7 +20,7 @@ Suggested long description:
 
 ## Architecture and reviewer setup
 
-Submit as **Skills only**. The final upload is `skills/ibkr-zectrix-dashboard/`, which contains `SKILL.md`, the renderer, the synthetic fixture, runtime requirements, and dependency guidance.
+Submit as **Skills only**. The final ZIP is rooted at the plugin directory and contains `.codex-plugin/plugin.json`, `assets/logo.png`, and `skills/ibkr-zectrix-dashboard/`. The skill directory contains `SKILL.md`, the renderer, the synthetic fixture, runtime requirements, and dependency guidance. Do not include `interface.screenshots`; OpenAI reserves that manifest field for submissions with MCP and custom UI.
 
 The credential-free reviewer path requires Python 3.11+ and Pillow 9.4-11.x. From the skill directory:
 
@@ -94,7 +94,7 @@ Expected artifact: a 400 x 300, 1-bit PNG containing only synthetic data. No net
 - Made the uploaded skill bundle self-contained with its renderer, sample fixture, runtime requirements, and dependency guidance.
 - Added owner-only permissions for preferences, rendered dashboards, NAV history, and dedupe state.
 - Corrected timezone labels to reflect the configured UTC offset.
-- Added a credential-free reviewer workflow, public terms, support details, production logo, synthetic screenshot, and reproducible positive/negative test cases.
+- Added a credential-free reviewer workflow, public terms, support details, production logo, a public synthetic preview reference, and reproducible positive/negative test cases.
 - Preserved read-only IBKR behavior, preview-before-push authorization, sanitized relay input, and no sample/stale fallback on live failures.
 
 ## Portal prerequisites to verify manually
@@ -102,4 +102,4 @@ Expected artifact: a 400 x 300, 1-bit PNG containing only synthetic data. No net
 - The submitter has **Apps Management: Write** in the publishing organization.
 - The selected developer or business identity is verified and matches the public listing.
 - The chosen country availability matches the publisher's support and legal readiness.
-- The final uploaded skill zip contains no `output/`, `state/`, `.env`, `.DS_Store`, `__pycache__`, or `.pyc` files.
+- The final uploaded plugin ZIP contains the manifest, bundled skill, and logo; it contains no `interface.screenshots`, `output/`, `state/`, `.env`, `.DS_Store`, `__pycache__`, or `.pyc` files.

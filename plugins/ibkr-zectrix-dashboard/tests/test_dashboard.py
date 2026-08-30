@@ -306,8 +306,8 @@ class DashboardTests(unittest.TestCase):
         interface = manifest["interface"]
         for field in ("logo", "composerIcon"):
             self.assertTrue((ROOT / interface[field].removeprefix("./")).is_file())
-        for screenshot in interface["screenshots"]:
-            self.assertTrue((ROOT / screenshot.removeprefix("./")).is_file())
+        self.assertNotIn("screenshots", interface)
+        self.assertTrue((ROOT / "assets" / "dashboard-preview.png").is_file())
         self.assertTrue((ROOT / "PRIVACY.md").is_file())
         self.assertTrue((ROOT / "TERMS.md").is_file())
         self.assertTrue((ROOT / "SUBMISSION.md").is_file())
