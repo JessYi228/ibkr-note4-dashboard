@@ -70,6 +70,8 @@ python3 scripts/ibkr_zectrix_dashboard.py devices
 python3 scripts/ibkr_zectrix_dashboard.py run --no-push
 ```
 
+首次读取已连接的 IBKR 数据或向 ZECTRIX 实时推送前，请运行 `python3 scripts/ibkr_zectrix_dashboard.py authorize`。插件只询问一次，并在私有 preferences 文件中保存一个不含秘密的布尔授权值。自动化使用 `authorize --check` 验证；可用 `authorize --revoke` 撤销。
+
 第一次真实推送前必须检查图片。定时运行可以复用已经记住的选项，但认证或读取失败时必须停止，不能改用样例或旧数据。
 
 数据处理规则见 [PRIVACY.md](PRIVACY.md)，使用条款见 [TERMS.md](TERMS.md)，支持入口为 [GitHub Issues](https://github.com/JessYi228/ibkr-note4-dashboard/issues)。本插件只用于信息展示，绝不会下单、改单或撤单。

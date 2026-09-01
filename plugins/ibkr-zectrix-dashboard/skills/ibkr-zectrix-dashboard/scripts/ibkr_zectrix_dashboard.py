@@ -40,7 +40,7 @@ PREFERENCE_FIELD_BY_ENV = {
     "ZECTRIX_PAGE_ID": "page_id",
     "DASHBOARD_MAX_POSITIONS": "max_positions",
 }
-ALLOWED_PREFERENCE_FIELDS = frozenset(PREFERENCE_FIELD_BY_ENV.values())
+ALLOWED_PREFERENCE_FIELDS = frozenset(PREFERENCE_FIELD_BY_ENV.values()) | {"delivery_authorized"}
 FORBIDDEN_PREFERENCE_FIELDS = frozenset(
     {
         "IBKR_FLEX_TOKEN",
@@ -822,7 +822,13 @@ def select_zectrix_device(api_key: str) -> str:
     return device_id
 
 
+def require_delivery_authorization() -> None:
+    if load_preferences().get("delivery_authorized") is not True:
+        raise DashboardError("Delivery is not authorized; run 'authorize' before account reads or live push")
+
+
 def push_zectrix(image_path: Path) -> None:
+    require_delivery_authorization()
     api_key = secret("ZECTRIX_API_KEY", ZECTRIX_KEYCHAIN_SERVICE)
     if not api_key:
         raise DashboardError("ZECTRIX_API_KEY or its macOS Keychain item is required to push")
@@ -1006,6 +1012,7 @@ def command_relay(args: argparse.Namespace) -> None:
         print(f"Relay preview written: {output}")
         return
 
+    require_delivery_authorization()
     state_path = Path(args.dedupe_state).expanduser()
     if not args.force and read_last_push_fingerprint(state_path) == fingerprint:
         print("Relay unchanged: push skipped")
@@ -1013,6 +1020,33 @@ def command_relay(args: argparse.Namespace) -> None:
     push_zectrix(output)
     write_last_push_fingerprint(state_path, fingerprint)
     print(f"Relay pushed: {output}")
+
+
+def command_authorize(args: argparse.Namespace) -> None:
+    """Persist explicit approval for sanitized IBKR data delivery."""
+    preferences = load_preferences()
+    if args.check:
+        require_delivery_authorization()
+        print("Delivery authorization is active")
+        return
+    if args.revoke:
+        preferences["delivery_authorized"] = False
+        target = save_preferences(preferences)
+        print(f"Delivery authorization revoked: {display_path(target)}")
+        return
+    if preferences.get("delivery_authorized") is True:
+        print("Delivery authorization already saved")
+        return
+    answer = input(
+        "Allow this plugin to read your connected IBKR account through the four approved read-only calls "
+        "and push only the sanitized dashboard to ZECTRIX? [y/N] "
+    ).strip().lower()
+    if answer not in {"y", "yes"}:
+        print("Delivery authorization not saved")
+        return
+    preferences["delivery_authorized"] = True
+    target = save_preferences(preferences)
+    print(f"Delivery authorization saved: {display_path(target)}")
 
 
 def command_preview(args: argparse.Namespace) -> None:
@@ -1068,6 +1102,14 @@ def build_parser() -> argparse.ArgumentParser:
     settings = subparsers.add_parser("settings", help="Show saved choices and redacted credential readiness")
     settings.add_argument("--json", action="store_true")
     settings.set_defaults(handler=command_settings)
+
+    authorize = subparsers.add_parser(
+        "authorize", help="Ask once and remember approval for sanitized IBKR delivery"
+    )
+    authorize_mode = authorize.add_mutually_exclusive_group()
+    authorize_mode.add_argument("--check", action="store_true", help="Fail unless approval is active")
+    authorize_mode.add_argument("--revoke", action="store_true", help="Revoke saved delivery approval")
+    authorize.set_defaults(handler=command_authorize)
 
     preview = subparsers.add_parser("preview", help="Render a supplied JSON snapshot")
     preview.add_argument("--input", default="assets/sample_snapshot.json")

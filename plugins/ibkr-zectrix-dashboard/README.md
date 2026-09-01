@@ -70,6 +70,8 @@ python3 scripts/ibkr_zectrix_dashboard.py devices
 python3 scripts/ibkr_zectrix_dashboard.py run --no-push
 ```
 
+Before the first connected IBKR read or live ZECTRIX delivery, run `python3 scripts/ibkr_zectrix_dashboard.py authorize`. The plugin asks once and stores only a non-secret boolean approval in the private preferences file. Automations verify it with `authorize --check`; revoke it with `authorize --revoke`.
+
 Review the first real image before authorizing delivery. Scheduled runs may reuse the saved preferences, but must stop rather than use sample or stale data when authentication or data retrieval fails.
 
 See [PRIVACY.md](PRIVACY.md) for the data-handling policy. This plugin is informational software and never places, modifies, or cancels orders.

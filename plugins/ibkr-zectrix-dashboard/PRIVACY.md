@@ -14,7 +14,7 @@ The plugin does not ask users to send credentials through chat and does not stor
 
 ## Stored data
 
-The optional preferences file contains only non-secret choices such as data source, secret backend, timezone, currency, page ID, and maximum displayed positions. Preferences, rendered dashboards, local NAV history, and dedupe state are written with owner-only `0600` file permissions on POSIX systems; newly created state and output directories use `0700`. Dedupe state contains only a SHA-256 fingerprint and push timestamp. Rendered dashboard images and any optional local history remain in storage controlled by the user.
+The optional preferences file contains only non-secret choices such as data source, secret backend, timezone, currency, page ID, maximum displayed positions, and a revocable boolean delivery approval. Preferences, rendered dashboards, local NAV history, and dedupe state are written with owner-only `0600` file permissions on POSIX systems; newly created state and output directories use `0700`. Dedupe state contains only a SHA-256 fingerprint and push timestamp. Rendered dashboard images and any optional local history remain in storage controlled by the user.
 
 ## Network requests
 

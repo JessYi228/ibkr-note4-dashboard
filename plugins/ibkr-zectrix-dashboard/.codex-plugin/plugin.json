@@ -1,6 +1,6 @@
 {
   "name": "ibkr-zectrix-dashboard",
-  "version": "0.2.1",
+  "version": "0.2.1+codex.20260901234430",
   "description": "Configure and run an independent, secret-safe, read-only portfolio dashboard for ZECTRIX NOTE4.",
   "author": {
     "name": "JessYi228",

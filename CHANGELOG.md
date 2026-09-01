@@ -4,6 +4,7 @@
 
 - Pace consecutive Flex `SendRequest` calls above IBKR's one-request-per-second token limit.
 - Retry Flex error 1018 once after a complete one-minute cooldown instead of failing immediately or retrying aggressively.
+- Require one-time, revocable local authorization before connected IBKR reads or any ZECTRIX delivery.
 
 ## 0.2.0 - 2026-08-28
 

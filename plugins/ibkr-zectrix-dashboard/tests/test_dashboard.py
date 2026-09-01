@@ -44,6 +44,44 @@ class DashboardTests(unittest.TestCase):
             with self.assertRaises(DASHBOARD.DashboardError):
                 DASHBOARD.save_preferences({"ZECTRIX_API_KEY": "must-not-be-written"}, path)
 
+    def test_authorization_is_persisted_and_revocable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "preferences.json"
+            with patch.dict(os.environ, {"IBKR_ZECTRIX_PREFERENCES_PATH": str(path)}, clear=True):
+                with patch("builtins.input", return_value="yes"):
+                    DASHBOARD.command_authorize(Namespace(check=False, revoke=False))
+                self.assertIs(DASHBOARD.load_preferences()["delivery_authorized"], True)
+                DASHBOARD.command_authorize(Namespace(check=True, revoke=False))
+                DASHBOARD.command_authorize(Namespace(check=False, revoke=True))
+                self.assertIs(DASHBOARD.load_preferences()["delivery_authorized"], False)
+                with self.assertRaisesRegex(DASHBOARD.DashboardError, "not authorized"):
+                    DASHBOARD.command_authorize(Namespace(check=True, revoke=False))
+
+    def test_every_push_fails_before_secret_access_without_authorization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "preferences.json"
+            with patch.dict(os.environ, {"IBKR_ZECTRIX_PREFERENCES_PATH": str(path)}, clear=True):
+                with patch.object(DASHBOARD, "secret", side_effect=AssertionError("secret accessed")):
+                    with self.assertRaisesRegex(DASHBOARD.DashboardError, "not authorized"):
+                        DASHBOARD.push_zectrix(Path(directory) / "preview.png")
+
+    def test_run_and_direct_push_use_the_same_authorization_guard(self):
+        snapshot = {"source": "json", "currency": "USD", "positions": []}
+        with tempfile.TemporaryDirectory() as directory:
+            preferences = Path(directory) / "preferences.json"
+            output = Path(directory) / "preview.png"
+            with patch.dict(os.environ, {"IBKR_ZECTRIX_PREFERENCES_PATH": str(preferences)}, clear=True):
+                direct = DASHBOARD.build_parser().parse_args(["push", str(output)])
+                with self.assertRaisesRegex(DASHBOARD.DashboardError, "not authorized"):
+                    direct.handler(direct)
+                with (
+                    patch.object(DASHBOARD, "fetch_snapshot", return_value=snapshot),
+                    patch.object(DASHBOARD, "append_history", return_value=[]),
+                    patch.object(DASHBOARD, "render"),
+                    self.assertRaisesRegex(DASHBOARD.DashboardError, "not authorized"),
+                ):
+                    DASHBOARD.command_run(Namespace(output=str(output), no_push=False))
+
     def test_environment_overrides_remembered_preference(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "preferences.json"
@@ -256,6 +294,7 @@ class DashboardTests(unittest.TestCase):
         try:
             DASHBOARD.push_zectrix = lambda path: pushes.append(path)
             with tempfile.TemporaryDirectory() as directory:
+                preferences = Path(directory) / "preferences.json"
                 output = Path(directory) / "preview.png"
                 state = Path(directory) / "last-push.json"
                 args = Namespace(
@@ -265,11 +304,17 @@ class DashboardTests(unittest.TestCase):
                     dedupe_state=str(state),
                     force=False,
                 )
-                DASHBOARD.sys.stdin = io.StringIO(json.dumps(payload))
-                DASHBOARD.command_relay(args)
-                payload["as_of"] = "2026-08-28T12:30:00Z"
-                DASHBOARD.sys.stdin = io.StringIO(json.dumps(payload))
-                DASHBOARD.command_relay(args)
+                with patch.dict(os.environ, {"IBKR_ZECTRIX_PREFERENCES_PATH": str(preferences)}, clear=True):
+                    DASHBOARD.save_preferences({"delivery_authorized": True})
+                    DASHBOARD.sys.stdin = io.StringIO(json.dumps(payload))
+                    DASHBOARD.command_relay(args)
+                    payload["as_of"] = "2026-08-28T12:30:00Z"
+                    DASHBOARD.sys.stdin = io.StringIO(json.dumps(payload))
+                    DASHBOARD.command_relay(args)
+                    DASHBOARD.save_preferences({"delivery_authorized": False})
+                    DASHBOARD.sys.stdin = io.StringIO(json.dumps(payload))
+                    with self.assertRaisesRegex(DASHBOARD.DashboardError, "not authorized"):
+                        DASHBOARD.command_relay(args)
                 self.assertEqual(len(pushes), 1)
                 saved = json.loads(state.read_text(encoding="utf-8"))
                 self.assertEqual(set(saved), {"sha256", "pushed_at"})

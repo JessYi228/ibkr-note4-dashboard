@@ -15,6 +15,7 @@ Before the first preview in an interactive session, verify that Pillow is import
 - Never ask a user to paste a Flex token, ZECTRIX API key, account ID, device ID, password, or raw portfolio response into chat.
 - Never print or persist those values in logs, screenshots, source files, preferences, state files, or Git.
 - The preferences file stores only non-secret choices and must remain mode `0600`. Environment variables override remembered choices.
+- Live delivery requires a separate persisted `delivery_authorized` approval; it contains no secret or identifier.
 - Store secrets only in the user's macOS Keychain or inject them at runtime from a protected local environment file or cloud secret manager.
 - Preview the 400 x 300 image before the first live push. Do not silently widen permissions or change the selected device.
 - In relay or automation mode, never use sample or stale data after any read, authentication, rendering, or delivery failure.
@@ -65,6 +66,8 @@ On later runs, read and honor the saved preferences. Do not ask the same setup q
 - `json`: explicit sanitized input for development or a custom adapter.
 
 ## Connected IBKR relay
+
+Before every connected IBKR read sequence, run `python3 scripts/ibkr_zectrix_dashboard.py authorize --check`. If it fails, run `python3 scripts/ibkr_zectrix_dashboard.py authorize` in an interactive terminal and wait for the user's answer before calling IBKR. The command asks whether to allow the four approved read-only IBKR calls and delivery of the sanitized dashboard to ZECTRIX, then stores only the boolean approval in the owner-readable preferences file. If declined or absent, stop before account reads; every push path also fails closed. Revoke later with `python3 scripts/ibkr_zectrix_dashboard.py authorize --revoke`.
 
 First confirm that the separately installed IBKR plugin exposes every call below. If any call is unavailable, stop and offer the credential-free sample preview or another explicitly configured data source; do not invent a tool or claim that the dependency is bundled.
 
