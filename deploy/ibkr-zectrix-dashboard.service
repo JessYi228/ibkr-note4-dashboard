@@ -1,0 +1,25 @@
+[Unit]
+Description=IBKR -> ZECTRIX NOTE4 dashboard refresh step (read-only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=paseo
+Group=paseo
+WorkingDirectory=/home/paseo/projects/ibkr-zectrix-dashboard
+ExecStart=/home/paseo/projects/ibkr-zectrix-dashboard/.venv/bin/ibkr-zectrix tick
+TimeoutStartSec=10min
+# Exit 1 = IBKR fetch failed (the screen turns STALE after the deadline); 2 = configuration error.
+UMask=0077
+MemoryMax=256M
+CPUQuota=50%
+Nice=10
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/paseo/.local/state/ibkr-zectrix-dashboard
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes

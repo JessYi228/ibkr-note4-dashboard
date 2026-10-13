@@ -1,0 +1,14 @@
+<FlexQueryResponse queryName="dashboard-daily" type="AF">
+<FlexStatements count="1">
+<FlexStatement accountId="U0000000" fromDate="20261012" toDate="20261012" period="LastBusinessDay" whenGenerated="20261013;053020">
+<EquitySummaryInBase>
+<EquitySummaryByReportDateInBase reportDate="20261012" currency="USD" cash="312.08" total="4201.90" />
+</EquitySummaryInBase>
+<ChangeInNAV fromDate="20261012" toDate="20261012" startingValue="4186.42" markToMarket="15.48" endingValue="4201.90" />
+<MTMPerformanceSummaryInBase>
+<MTMPerformanceSummaryUnderlying symbol="SPY" total="10.71" />
+<MTMPerformanceSummaryUnderlying symbol="QQQ" total="4.77" />
+</MTMPerformanceSummaryInBase>
+</FlexStatement>
+</FlexStatements>
+</FlexQueryResponse>

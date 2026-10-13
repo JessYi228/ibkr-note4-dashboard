@@ -1,0 +1,18 @@
+<FlexQueryResponse queryName="dashboard" type="AF">
+<FlexStatements count="1">
+<FlexStatement accountId="U0000000" fromDate="20260914" toDate="20261012" period="Last30CalendarDays" whenGenerated="20261013;053012">
+<EquitySummaryInBase>
+<EquitySummaryByReportDateInBase reportDate="20261007" currency="USD" cash="305.10" total="4150.60" />
+<EquitySummaryByReportDateInBase reportDate="20261008" currency="USD" cash="305.10" total="4163.25" />
+<EquitySummaryByReportDateInBase reportDate="20261009" currency="USD" cash="312.08" total="4186.42" />
+<EquitySummaryByReportDateInBase reportDate="20261012" currency="USD" cash="312.08" total="4201.90" />
+</EquitySummaryInBase>
+<ChangeInNAV fromDate="20260914" toDate="20261012" startingValue="4000.00" markToMarket="201.90" endingValue="4201.90" />
+<OpenPositions>
+<OpenPosition symbol="SPY" position="3.4521" markPrice="665.20" positionValue="2296.34" fifoPnlUnrealized="99.11" levelOfDetail="SUMMARY" currency="USD" />
+<OpenPosition symbol="SPY" position="3.4521" markPrice="665.20" positionValue="2296.34" fifoPnlUnrealized="99.11" levelOfDetail="LOT" currency="USD" />
+<OpenPosition symbol="QQQ" position="1.8" markPrice="601.00" positionValue="1081.80" fifoPnlUnrealized="55.35" levelOfDetail="SUMMARY" currency="USD" />
+</OpenPositions>
+</FlexStatement>
+</FlexStatements>
+</FlexQueryResponse>

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the IBKR -> ZECTRIX dashboard refresh step every 10 minutes
+
+[Timer]
+# Cheap when up to date: no network unless a new NYSE session report is due.
+OnCalendar=*:0/10
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target

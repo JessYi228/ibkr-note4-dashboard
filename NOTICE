@@ -1,0 +1,4 @@
+Portions of src/ibkr_zectrix_dashboard/flex.py, render.py and zectrix.py are
+adapted from ibkr-note4-dashboard (https://github.com/JessYi228/ibkr-note4-dashboard,
+commit 81d13b4), Copyright (c) 2026 JessYi228, MIT License; see
+LICENSES/ibkr-note4-dashboard-MIT.txt.

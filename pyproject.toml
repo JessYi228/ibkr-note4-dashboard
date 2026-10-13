@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ibkr-zectrix-dashboard"
+version = "0.1.0"
+description = "Read-only IBKR portfolio dashboard for the ZECTRIX NOTE4 e-paper display, with session-aware refresh and visible staleness"
+requires-python = ">=3.11"
+dependencies = ["pillow>=11.3,<13", "exchange-calendars>=4.11,<5"]
+
+[project.scripts]
+ibkr-zectrix = "ibkr_zectrix_dashboard.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ibkr_zectrix_dashboard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
