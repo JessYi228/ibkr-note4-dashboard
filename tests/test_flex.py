@@ -47,6 +47,7 @@ def test_parse_30_day_statement():
     assert snapshot.unrealized_pnl == pytest.approx(99.11 + 55.35)
     assert snapshot.nav_history[-1] == (date(2026, 10, 12), pytest.approx(4201.90))
     assert len(snapshot.nav_history) == 4
+    assert snapshot.window_days == 29 and snapshot.window_label == "29D"  # 09/14..10/12 calendar days
     assert per_symbol == {}
 
 

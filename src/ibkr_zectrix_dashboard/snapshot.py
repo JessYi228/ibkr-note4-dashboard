@@ -48,6 +48,16 @@ class Snapshot:
     unrealized_pnl: float | None
     positions: list[Position] = field(default_factory=list)
     nav_history: list[tuple[date, float]] = field(default_factory=list)
+    # Calendar days covered by the broker report (e.g. 30 for "Last 30 Calendar Days").
+    window_days: int | None = None
+
+    @property
+    def window_label(self) -> str:
+        """Chart window in calendar days; nav_history only has trading days."""
+        days = self.window_days
+        if days is None and len(self.nav_history) >= 2:
+            days = (self.nav_history[-1][0] - self.nav_history[0][0]).days + 1
+        return f"{days}D" if days else ""
 
     @property
     def daily_pnl_pct(self) -> float | None:
@@ -107,6 +117,7 @@ class Snapshot:
             unrealized_pnl=optional_float(payload.get("unrealized_pnl")),
             positions=positions,
             nav_history=history,
+            window_days=int(payload["window_days"]) if payload.get("window_days") else None,
         )
         snapshot.validate()
         return snapshot

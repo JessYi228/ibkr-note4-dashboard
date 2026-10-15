@@ -90,3 +90,10 @@ def test_renders_without_daily_query():
     for position in snapshot.positions:
         position.daily_pnl = None
     assert image(render_png(snapshot, Banner("ok", NOW), tz=TZ)).size == (400, 300)
+
+
+def test_window_label_counts_calendar_days_not_trading_days():
+    snapshot = _sample()  # 21 trading days from 09/11 to 10/09
+    assert len(snapshot.nav_history) == 21 and snapshot.window_label == "29D"
+    snapshot.window_days = 30
+    assert snapshot.window_label == "30D"

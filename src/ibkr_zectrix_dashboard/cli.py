@@ -92,7 +92,8 @@ def cmd_check(args: argparse.Namespace) -> int:
         "Recognized: nav=yes "
         f"cash={'yes' if snapshot.cash is not None else 'no'} "
         f"daily_pnl={'yes' if snapshot.daily_pnl is not None else 'no'} "
-        f"positions={len(snapshot.positions)} history_points={len(snapshot.nav_history)}"
+        f"positions={len(snapshot.positions)} history_points={len(snapshot.nav_history)} "
+        f"window={snapshot.window_label or 'unknown'}"
     )
     print(f"Rendered without pushing: {args.output} - review it before enabling the timer")
     return 0

@@ -88,6 +88,12 @@ def _is_single_day(statement: dict[str, Any], change_rows: list[dict[str, Any]])
     return bool(start and end and start == end)
 
 
+def _window_days(statement: dict[str, Any]) -> int | None:
+    start = parse_date(_first(statement, ["fromDate"]))
+    end = parse_date(_first(statement, ["toDate"]))
+    return (end - start).days + 1 if start and end and end >= start else None
+
+
 def parse_statement(payload: bytes) -> tuple[Snapshot, dict[str, float]]:
     """Return the snapshot plus per-symbol daily P&L (only for single-day reports)."""
     try:
@@ -184,6 +190,7 @@ def parse_statement(payload: bytes) -> tuple[Snapshot, dict[str, float]]:
             for row in positions
         ],
         nav_history=sorted(history.items())[-30:],
+        window_days=_window_days(statement),
     )
     snapshot.validate()
     return snapshot, per_symbol

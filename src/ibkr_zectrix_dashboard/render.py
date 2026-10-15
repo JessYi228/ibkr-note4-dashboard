@@ -83,7 +83,7 @@ def render_png(snapshot: Snapshot, banner: Banner, *, tz: ZoneInfo, max_position
     d.text(draw, (12, 120), f"CASH  {money(snapshot.cash, currency, compact=True, symbol=False)}", fonts["r10"])
 
     history = snapshot.nav_history
-    d.text(draw, (246, 39), f"NAV {len(history)}D" if history else "NAV", fonts["bold12"])
+    d.text(draw, (246, 39), f"NAV {snapshot.window_label}".strip(), fonts["bold12"])
     change = snapshot.period_change_pct
     if change is not None:
         d.arrow_right(draw, 388, 39, change, d.pct(change), fonts["bold12"])
