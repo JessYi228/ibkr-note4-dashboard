@@ -101,12 +101,38 @@ class StateStore:
         temporary.replace(self.path)
 
     @contextmanager
-    def locked(self) -> Iterator[None]:
+    def locked(self, name: str = "lock") -> Iterator[None]:
         """Prevent overlapping timer runs from fetching or pushing twice."""
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-        with open(self.directory / "lock", "a") as handle:
+        with open(self.directory / name, "a") as handle:
             try:
                 fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as exc:
                 raise DashboardError("Another refresh is already running") from exc
             yield
+
+
+class PaperStateStore:
+    """Last good book summaries plus what the paper page currently shows."""
+
+    def __init__(self, directory: Path):
+        self.directory = directory
+        self.path = directory / "paper-state.json"
+
+    def load(self) -> tuple[dict[str, Any], str | None]:
+        try:
+            payload = json.loads(self.path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            return {}, None
+        except (OSError, json.JSONDecodeError) as exc:
+            raise DashboardError(f"State file is unreadable: {self.path}") from exc
+        return payload.get("books") or {}, payload.get("displayed_fingerprint")
+
+    def save(self, books: dict[str, Any], displayed: str | None, displayed_at: datetime | None) -> None:
+        self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        temporary = self.path.with_suffix(".json.tmp")
+        fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump({"books": books, "displayed_fingerprint": displayed, "displayed_at": _ts(displayed_at)},
+                      handle, indent=2, sort_keys=True)
+        temporary.replace(self.path)

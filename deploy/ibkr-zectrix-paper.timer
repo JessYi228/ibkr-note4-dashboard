@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the paper-accounts ZECTRIX page refresh step every 10 minutes
+
+[Timer]
+# Reads only the local paper dashboards; pushes only when the page changes.
+OnCalendar=*:0/10
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target

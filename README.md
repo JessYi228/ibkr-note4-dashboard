@@ -9,7 +9,7 @@
 | 每个工作日只在北京时间 18:17 取一次数；美股收盘（北京 04:00/05:00）后要等约 14 小时 | 每 10 分钟检查一次；按 NYSE 交易日历算出“现在应该有哪一天的报表”，收盘 1 小时后开始取，拿到新报表就推送 |
 | Codex 插件依赖电脑、Codex 和 IBKR 连接都在线，任何一个断了就不更新 | 运行时不依赖任何 LLM/Codex，只需要 Flex token 和 ZECTRIX API Key |
 | 取数失败直接退出，屏幕静静停在旧图 | 超过截止时间（默认收盘后 10 小时）还没拿到，屏幕顶部变成黑底 **STALE** 警告，写明数据日期、落后几个交易日、失败原因和最后尝试时间 |
-| 只显示数据日期 | 同时显示 **DATA（IBKR 报表日期）** 和 **UPDATED（我们取到它的时间）** |
+| 只显示数据日期 | 同时显示 **CLOSE 10/09 FRI（这些数字是哪个交易日收盘时的状态，美东日期）** 和 **UPDATED（我们取到它的时间，北京时间）** |
 
 **重要限制：** Flex 是券商报表，数据是“最近一个已收盘交易日”，不是盘中实时。盘中实时需要 IB Gateway（每周手机确认一次登录），尚未实现。
 
@@ -18,6 +18,16 @@
 左：正常；右：数据过期（虚构样例数据）。没配置日盈亏查询时，持仓表改为显示未实现盈亏（[示例](docs/preview-no-daily-query.png)）。
 
 ![preview](docs/preview-compare.png)
+
+## 第二页：paper broker 假钱账户
+
+`paper-tick` 只读本机 paper-broker 三个面板的 `/api/status`（生产 PROD、实验 EXP、策略实验室 LAB），合成一张图推到 **另一页**（`PAPER_PAGE_ID`，默认 2；不能与 IBKR 的 `ZECTRIX_PAGE_ID` 相同）。不读写任何账本、不改任何服务。
+
+- 每个账本一条黑底标题栏：账本名、开始日期、同期 SPY/QQQ 买入持有收益。
+- 每个策略一行：开始以来的走势（虚线是 10 万起点）、权益、累计收益、比同账本 SPY 多/少几个百分点（VS SPY）、当日涨跌。
+- 某个账本 API 连不上、运行器异常、有积压，或收盘 4 小时后（`PAPER_STALE_AFTER_MINUTES`）还没记入当天，页头变成黑底 **CHECK PAPER RUNNERS**，对应标题栏写明原因；连不上时保留上次的数字。
+
+![paper preview](docs/preview-paper.png)（虚构样例；左正常，右有一个账本连不上）
 
 ## 使用
 
@@ -32,6 +42,8 @@ uv run ibkr-zectrix devices                                  # 确认 ZECTRIX ke
 uv run ibkr-zectrix tick --dry-run                           # 走一遍定时逻辑，不推送不存状态
 uv run ibkr-zectrix tick                                     # 定时任务入口
 uv run ibkr-zectrix status                                   # 查看刷新状态（不打印金额）
+uv run ibkr-zectrix paper-preview                            # 用本机 paper 面板数据渲染第二页，不推送
+uv run ibkr-zectrix paper-tick                               # 第二页定时任务入口
 ```
 
 ## 刷新逻辑（`tick`）

@@ -77,7 +77,7 @@ def test_zectrix_push_shape():
 
 
 def test_change_pct_is_relative_to_value_before_change():
-    from ibkr_zectrix_dashboard.render import _change_pct, _signed
+    from ibkr_zectrix_dashboard.drawing import change_pct as _change_pct, signed as _signed
 
     assert _change_pct(14.02, 2285.63) == pytest.approx(14.02 / (2285.63 - 14.02) * 100)
     assert _change_pct(None, 100.0) is None and _change_pct(5.0, 5.0) is None

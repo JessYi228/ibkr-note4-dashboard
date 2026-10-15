@@ -1,0 +1,25 @@
+[Unit]
+Description=Paper-broker accounts -> ZECTRIX page refresh step (read-only, loopback)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=paseo
+Group=paseo
+WorkingDirectory=/home/paseo/projects/ibkr-zectrix-dashboard
+ExecStart=/home/paseo/projects/ibkr-zectrix-dashboard/.venv/bin/ibkr-zectrix paper-tick
+TimeoutStartSec=10min
+# Exit 1 = a paper book is unhealthy or late (shown on the screen); 2 = configuration error.
+UMask=0077
+MemoryMax=256M
+CPUQuota=50%
+Nice=10
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/paseo/.local/state/ibkr-zectrix-dashboard
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes

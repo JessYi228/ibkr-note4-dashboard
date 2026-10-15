@@ -30,6 +30,12 @@ ZECTRIX_API_KEY=
 ZECTRIX_DEVICE_ID=
 ZECTRIX_PAGE_ID=1
 
+# Paper-broker page (local read-only dashboards; pushed to its own page).
+PAPER_PAGE_ID=2
+# PAPER_BOOKS=PROD=http://127.0.0.1:8877,EXP=http://127.0.0.1:8878,LAB=http://127.0.0.1:8879
+# Flag a book whose runner has not committed the session this long after the close.
+PAPER_STALE_AFTER_MINUTES=240
+
 # Display.
 DASHBOARD_TIMEZONE=Asia/Shanghai
 DASHBOARD_MAX_POSITIONS=4

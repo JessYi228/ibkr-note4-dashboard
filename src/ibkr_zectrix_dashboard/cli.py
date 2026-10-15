@@ -13,11 +13,13 @@ from pathlib import Path
 from .config import DEFAULT_ENV_FILE, ENV_TEMPLATE, Settings, env, load_env_file
 from .errors import DashboardError
 from .flex import FlexClient, fetch_snapshot
+from .paper import DEFAULT_BOOKS, PaperBook, collect, parse_books, run_paper_once
 from .refresh import run_once
 from .render import Banner, render_png
+from .render_paper import render_paper_png
 from .sessions import expected_session
 from .snapshot import Snapshot
-from .state import StateStore
+from .state import PaperStateStore, StateStore
 from .zectrix import ZectrixClient, masked
 
 
@@ -118,6 +120,53 @@ def cmd_tick(args: argparse.Namespace) -> int:
     return 1 if outcome.failed else 0
 
 
+def _paper_books() -> list[tuple[str, str]]:
+    return parse_books(env("PAPER_BOOKS") or DEFAULT_BOOKS)
+
+
+def cmd_paper_preview(args: argparse.Namespace) -> int:
+    """Render the paper page from the local dashboards. Never pushes or saves state."""
+    settings = _settings(args)
+    board = collect(_paper_books(), {}, now=datetime.now(timezone.utc))
+    _write_private(Path(args.output), render_paper_png(board, tz=settings.timezone, font_path=env("DASHBOARD_FONT_PATH")))
+    print(f"Paper preview written: {args.output}; data {board.data_session}, due {board.due_session}")
+    for problem in board.problems:
+        print(f"problem: {problem}")
+    return 0
+
+
+def cmd_paper_tick(args: argparse.Namespace) -> int:
+    settings = _settings(args)
+    if not settings.zectrix_api_key:
+        raise DashboardError(f"Missing settings: ZECTRIX_API_KEY in {args.env_file}")
+    page_id = env("PAPER_PAGE_ID", "2") or "2"
+    if page_id == settings.zectrix_page_id:
+        raise DashboardError("PAPER_PAGE_ID must differ from ZECTRIX_PAGE_ID so the IBKR page is not overwritten")
+    store = PaperStateStore(settings.state_dir)
+    image_path = settings.state_dir / "last-paper-display.png"
+
+    def show(board) -> None:
+        png = render_paper_png(board, tz=settings.timezone, font_path=env("DASHBOARD_FONT_PATH"))
+        _write_private(image_path, png)
+        if not args.dry_run:
+            client = ZectrixClient(settings.zectrix_api_key)
+            client.push_png(png, device_id=client.resolve_device(settings.zectrix_device_id), page_id=page_id)
+
+    with StateStore(settings.state_dir).locked("paper.lock"):
+        raw_books, displayed = store.load()
+        previous = {key: PaperBook.from_json(value) for key, value in raw_books.items()}
+        now = datetime.now(timezone.utc)
+        board, outcome = run_paper_once(previous, displayed, now=now, books=_paper_books(), show=show,
+                                        force=args.force)
+        if not args.dry_run:
+            fingerprint = board.fingerprint() if outcome.pushed else displayed
+            store.save({book.key: book.to_json() for book in board.books}, fingerprint, now if outcome.pushed else None)
+    pushed = ("pushed" if not args.dry_run else "rendered") if outcome.pushed else "no push"
+    problems = "; ".join(outcome.problems) or "none"
+    print(f"paper: {outcome.detail}; problems: {problems} ({pushed})")
+    return 1 if outcome.problems else 0
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     settings = _settings(args)
     state = StateStore(settings.state_dir).load()
@@ -159,6 +208,13 @@ def build_parser() -> argparse.ArgumentParser:
     tick.add_argument("--dry-run", action="store_true", help="render only; no push, state not saved")
     tick.add_argument("--force", action="store_true", help="fetch and push even if nothing changed")
     tick.set_defaults(func=cmd_tick)
+    paper_preview = sub.add_parser("paper-preview", help="render the paper-account page from local dashboards")
+    paper_preview.add_argument("--output", default="output/paper.png")
+    paper_preview.set_defaults(func=cmd_paper_preview)
+    paper_tick = sub.add_parser("paper-tick", help="scheduled paper-page step (push to PAPER_PAGE_ID on change)")
+    paper_tick.add_argument("--dry-run", action="store_true", help="render only; no push, state not saved")
+    paper_tick.add_argument("--force", action="store_true", help="push even if nothing changed")
+    paper_tick.set_defaults(func=cmd_paper_tick)
     sub.add_parser("status", help="show refresh state without portfolio values").set_defaults(func=cmd_status)
     sub.add_parser("devices", help="list ZECTRIX devices with masked IDs").set_defaults(func=cmd_devices)
     return parser

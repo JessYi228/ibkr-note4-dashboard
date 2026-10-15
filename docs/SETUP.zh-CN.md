@@ -61,6 +61,15 @@ nano ~/.config/ibkr-zectrix-dashboard/env
 
 确认墨水屏实际刷新了（API 接受图片不等于设备已经刷新）。
 
+## 5b. paper 账户页（第二页）
+
+```bash
+.venv/bin/ibkr-zectrix paper-preview --output output/paper.png   # 只渲染
+.venv/bin/ibkr-zectrix paper-tick --force                        # 第一次推到第 2 页
+```
+
+如果你的设备页码不是 2，在配置文件里加 `PAPER_PAGE_ID=…`（不能和 `ZECTRIX_PAGE_ID` 相同）。
+
 ## 6. 停掉旧版定时任务
 
 在 Codex 里关闭旧插件的定时（heartbeat）任务，避免两边交替推送不同的图。
@@ -69,11 +78,11 @@ nano ~/.config/ibkr-zectrix-dashboard/env
 
 ```bash
 mkdir -p -m 700 ~/.local/state/ibkr-zectrix-dashboard
-sudo cp deploy/ibkr-zectrix-dashboard.{service,timer} /etc/systemd/system/
+sudo cp deploy/ibkr-zectrix-{dashboard,paper}.{service,timer} /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now ibkr-zectrix-dashboard.timer
-systemctl list-timers ibkr-zectrix-dashboard.timer
-journalctl -u ibkr-zectrix-dashboard.service -n 20
+sudo systemctl enable --now ibkr-zectrix-dashboard.timer ibkr-zectrix-paper.timer
+systemctl list-timers 'ibkr-zectrix-*'
+journalctl -u ibkr-zectrix-dashboard.service -u ibkr-zectrix-paper.service -n 20
 ```
 
 之后用 `.venv/bin/ibkr-zectrix status` 看状态。
