@@ -66,10 +66,10 @@ def test_zectrix_push_shape():
 
     def request(url, **kwargs):
         calls.append((url, kwargs))
-        return json.dumps({"code": 0}).encode()
+        return json.dumps({"code": 0, "data": {"pageId": 2, "pushedPages": 1, "totalPages": 2}}).encode()
 
     client = ZectrixClient("key", request=request)
-    client.push_png(b"PNG", device_id="AA:BB", page_id="2")
+    assert client.push_png(b"PNG", device_id="AA:BB", page_id="2")["totalPages"] == 2
     url, kwargs = calls[0]
     assert url.endswith("/open/v1/devices/AA%3ABB/display/image")
     assert kwargs["method"] == "POST" and kwargs["headers"]["X-API-Key"] == "key"

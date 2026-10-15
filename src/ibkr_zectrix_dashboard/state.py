@@ -119,20 +119,20 @@ class PaperStateStore:
         self.directory = directory
         self.path = directory / "paper-state.json"
 
-    def load(self) -> tuple[dict[str, Any], str | None]:
+    def load(self) -> tuple[dict[str, Any], str | None, str | None]:
         try:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
         except FileNotFoundError:
-            return {}, None
+            return {}, None, None
         except (OSError, json.JSONDecodeError) as exc:
             raise DashboardError(f"State file is unreadable: {self.path}") from exc
-        return payload.get("books") or {}, payload.get("displayed_fingerprint")
+        return payload.get("books") or {}, payload.get("displayed_fingerprint"), payload.get("displayed_at")
 
-    def save(self, books: dict[str, Any], displayed: str | None, displayed_at: datetime | None) -> None:
+    def save(self, books: dict[str, Any], displayed: str | None, displayed_at: str | None) -> None:
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         temporary = self.path.with_suffix(".json.tmp")
         fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            json.dump({"books": books, "displayed_fingerprint": displayed, "displayed_at": _ts(displayed_at)},
+            json.dump({"books": books, "displayed_fingerprint": displayed, "displayed_at": displayed_at},
                       handle, indent=2, sort_keys=True)
         temporary.replace(self.path)

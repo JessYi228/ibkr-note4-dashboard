@@ -69,6 +69,11 @@ def cmd_preview(args: argparse.Namespace) -> int:
     return 0
 
 
+def _log_push(result: dict, page_id: str) -> None:
+    # The cloud only stores the page; the device shows it after its next sync.
+    print(f"ZECTRIX cloud accepted page {result.get('pageId', page_id)}")
+
+
 def _live_snapshot(settings: Settings) -> Snapshot:
     client = FlexClient(settings.flex_token)
     return fetch_snapshot(client, settings.flex_query_id, settings.flex_daily_query_id)
@@ -107,8 +112,9 @@ def cmd_tick(args: argparse.Namespace) -> int:
         _write_private(image_path, png)
         if not args.dry_run:
             client = ZectrixClient(settings.zectrix_api_key)
-            client.push_png(png, device_id=client.resolve_device(settings.zectrix_device_id),
+            result = client.push_png(png, device_id=client.resolve_device(settings.zectrix_device_id),
                             page_id=settings.zectrix_page_id)
+            _log_push(result, settings.zectrix_page_id)
 
     with store.locked():
         state = store.load()
@@ -153,17 +159,19 @@ def cmd_paper_tick(args: argparse.Namespace) -> int:
         _write_private(image_path, png)
         if not args.dry_run:
             client = ZectrixClient(settings.zectrix_api_key)
-            client.push_png(png, device_id=client.resolve_device(settings.zectrix_device_id), page_id=page_id)
+            _log_push(client.push_png(png, device_id=client.resolve_device(settings.zectrix_device_id),
+                                      page_id=page_id), page_id)
 
     with StateStore(settings.state_dir).locked("paper.lock"):
-        raw_books, displayed = store.load()
+        raw_books, displayed, displayed_at = store.load()
         previous = {key: PaperBook.from_json(value) for key, value in raw_books.items()}
         now = datetime.now(timezone.utc)
         board, outcome = run_paper_once(previous, displayed, now=now, books=_paper_books(), show=show,
                                         force=args.force, labels=parse_labels(env("PAPER_LABELS")))
         if not args.dry_run:
             fingerprint = board.fingerprint() if outcome.pushed else displayed
-            store.save({book.key: book.to_json() for book in board.books}, fingerprint, now if outcome.pushed else None)
+            store.save({book.key: book.to_json() for book in board.books}, fingerprint,
+                       now.isoformat(timespec="seconds") if outcome.pushed else displayed_at)
     pushed = ("pushed" if not args.dry_run else "rendered") if outcome.pushed else "no push"
     problems = "; ".join(outcome.problems) or "none"
     print(f"paper: {outcome.detail}; problems: {problems} ({pushed})")

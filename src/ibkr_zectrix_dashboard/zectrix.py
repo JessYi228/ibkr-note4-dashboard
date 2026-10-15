@@ -61,7 +61,8 @@ class ZectrixClient:
             raise DashboardError("The bound ZECTRIX device has no ID")
         return device_id
 
-    def push_png(self, png: bytes, *, device_id: str, page_id: str) -> None:
+    def push_png(self, png: bytes, *, device_id: str, page_id: str) -> dict[str, Any]:
+        """Returns the API's `data` object (currently just pageId) for logging."""
         boundary = f"----ibkr-zectrix-{uuid.uuid4().hex}"
         body = io.BytesIO()
         for name, value in (("dither", "false"), ("pageId", page_id)):
@@ -80,4 +81,5 @@ class ZectrixClient:
             data=body.getvalue(),
             attempts=3,
         )
-        _decode(response, "the image")
+        data = _decode(response, "the image").get("data")
+        return data if isinstance(data, dict) else {}
