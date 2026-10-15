@@ -13,7 +13,7 @@ from pathlib import Path
 from .config import DEFAULT_ENV_FILE, ENV_TEMPLATE, Settings, env, load_env_file
 from .errors import DashboardError
 from .flex import FlexClient, fetch_snapshot
-from .paper import DEFAULT_BOOKS, PaperBook, collect, parse_books, run_paper_once
+from .paper import PaperBook, collect, parse_books, parse_labels, run_paper_once
 from .refresh import run_once
 from .render import Banner, render_png
 from .render_paper import render_paper_png
@@ -36,7 +36,10 @@ def _sample() -> Snapshot:
 
 
 def _settings(args: argparse.Namespace) -> Settings:
-    load_env_file(Path(args.env_file).expanduser())
+    env_file = Path(args.env_file).expanduser()
+    load_env_file(env_file)
+    # Optional non-secret companion file for the paper page (books, labels).
+    load_env_file(env_file.with_name("paper.env"))
     return Settings.from_env()
 
 
@@ -121,13 +124,13 @@ def cmd_tick(args: argparse.Namespace) -> int:
 
 
 def _paper_books() -> list[tuple[str, str]]:
-    return parse_books(env("PAPER_BOOKS") or DEFAULT_BOOKS)
+    return parse_books(env("PAPER_BOOKS"))
 
 
 def cmd_paper_preview(args: argparse.Namespace) -> int:
     """Render the paper page from the local dashboards. Never pushes or saves state."""
     settings = _settings(args)
-    board = collect(_paper_books(), {}, now=datetime.now(timezone.utc))
+    board = collect(_paper_books(), {}, now=datetime.now(timezone.utc), labels=parse_labels(env("PAPER_LABELS")))
     _write_private(Path(args.output), render_paper_png(board, tz=settings.timezone, font_path=env("DASHBOARD_FONT_PATH")))
     print(f"Paper preview written: {args.output}; data {board.data_session}, due {board.due_session}")
     for problem in board.problems:
@@ -157,7 +160,7 @@ def cmd_paper_tick(args: argparse.Namespace) -> int:
         previous = {key: PaperBook.from_json(value) for key, value in raw_books.items()}
         now = datetime.now(timezone.utc)
         board, outcome = run_paper_once(previous, displayed, now=now, books=_paper_books(), show=show,
-                                        force=args.force)
+                                        force=args.force, labels=parse_labels(env("PAPER_LABELS")))
         if not args.dry_run:
             fingerprint = board.fingerprint() if outcome.pushed else displayed
             store.save({book.key: book.to_json() for book in board.books}, fingerprint, now if outcome.pushed else None)

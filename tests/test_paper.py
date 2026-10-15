@@ -6,7 +6,7 @@ import pytest
 from PIL import Image
 
 from ibkr_zectrix_dashboard.errors import DashboardError
-from ibkr_zectrix_dashboard.paper import PaperBook, collect, parse_book, parse_books, run_paper_once
+from ibkr_zectrix_dashboard.paper import PaperBook, collect, parse_book, parse_books, parse_labels, run_paper_once
 from ibkr_zectrix_dashboard.render_paper import render_paper_png
 
 TZ = ZoneInfo("Asia/Shanghai")
@@ -57,8 +57,10 @@ def test_refuses_non_paper_books_and_remote_urls():
     with pytest.raises(DashboardError, match="PAPER_ONLY"):
         parse_book("X", status(mode="LIVE"))
     with pytest.raises(DashboardError, match="loopback"):
-        parse_books("PROD=http://example.com:8877")
-    assert parse_books("prod=http://127.0.0.1:8877/") == [("PROD", "http://127.0.0.1:8877")]
+        parse_books("PROD=http://example.com:9001")
+    assert parse_books("prod=http://127.0.0.1:9001/") == [("PROD", "http://127.0.0.1:9001")]
+    with pytest.raises(DashboardError, match="not set"):
+        parse_books("")
 
 
 def test_collect_flags_lagging_unhealthy_and_unreachable_books():
@@ -120,3 +122,10 @@ def test_paper_tick_refuses_to_share_the_ibkr_page(tmp_path, capsys, monkeypatch
     env_file.chmod(0o600)
     assert main(["--env-file", str(env_file), "paper-tick", "--dry-run"]) == 2
     assert "PAPER_PAGE_ID" in capsys.readouterr().err
+
+
+def test_labels_come_from_configuration():
+    labels = parse_labels("alpha_v1=Alpha One, broken, =x")
+    assert labels == {"alpha_v1": "ALPHA ONE"}
+    assert parse_book("PROD", status(), labels).accounts[0].label == "ALPHA ONE"
+    assert parse_book("PROD", status()).accounts[0].label == "ALPHA V1"

@@ -21,7 +21,7 @@
 
 ## 第二页：paper broker 假钱账户
 
-`paper-tick` 只读本机 paper-broker 三个面板的 `/api/status`（生产 PROD、实验 EXP、策略实验室 LAB），合成一张图推到 **另一页**（`PAPER_PAGE_ID`，默认 2；不能与 IBKR 的 `ZECTRIX_PAGE_ID` 相同）。不读写任何账本、不改任何服务。
+`paper-tick` 只读本机 paper-broker 面板的 `/api/status`（在 `PAPER_BOOKS` 里列出，只允许本机回环地址），合成一张图推到 **另一页**（`PAPER_PAGE_ID`，默认 2；不能与 IBKR 的 `ZECTRIX_PAGE_ID` 相同）。不读写任何账本、不改任何服务。账户显示名用 `PAPER_LABELS` 配置；这两项可以放在配置目录下单独的 `paper.env` 里。
 
 - 每个账本一条黑底标题栏：账本名、开始日期、同期 SPY/QQQ 买入持有收益。
 - 每个策略一行：开始以来的走势（虚线是 10 万起点）、权益、累计收益、比同账本 SPY 多/少几个百分点（VS SPY）、当日涨跌。

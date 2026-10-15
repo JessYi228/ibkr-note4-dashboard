@@ -19,27 +19,24 @@ from .errors import DashboardError
 from .sessions import expected_session, sessions_between
 from .snapshot import optional_float
 
-DEFAULT_BOOKS = "PROD=http://127.0.0.1:8877,EXP=http://127.0.0.1:8878,LAB=http://127.0.0.1:8879"
 BENCHMARKS = {"benchmark_spy": "SPY", "benchmark_qqq": "QQQ"}
-LABELS = {
-    "momentum_v1": "MOM V1",
-    "momentum_v2": "MOM V2",
-    "mean_reversion_v1": "MEAN REV V1",
-    "rotation_v1": "ROTATION V1",
-    "research_momentum": "M252 TOP2",
-    "lab_sma_trend": "SMA TREND",
-    "lab_inverse_vol": "INVERSE VOL",
-    "lab_vol_target": "VOL TARGET",
-    "lab_blend": "BLEND",
-    "lab_sixty_forty": "60/40",
-}
 HEALTHY_RUNNER = {"ok", "waiting"}
 
 GetJson = Callable[[str], Any]
 
 
-def label_for(account_id: str) -> str:
-    return LABELS.get(account_id) or account_id.replace("lab_", "").replace("_", " ").upper()[:14]
+def parse_labels(spec: str) -> dict[str, str]:
+    """`account_id=SHORT NAME,...` from PAPER_LABELS; unlisted accounts show their ID."""
+    labels = {}
+    for item in filter(None, (part.strip() for part in spec.split(","))):
+        account_id, _, label = item.partition("=")
+        if account_id.strip() and label.strip():
+            labels[account_id.strip()] = label.strip().upper()[:14]
+    return labels
+
+
+def label_for(account_id: str, labels: dict[str, str]) -> str:
+    return labels.get(account_id) or account_id.replace("_", " ").upper()[:14]
 
 
 def parse_books(spec: str) -> list[tuple[str, str]]:
@@ -51,7 +48,7 @@ def parse_books(spec: str) -> list[tuple[str, str]]:
             raise DashboardError(f"PAPER_BOOKS entry {key or item!r} must be a loopback http URL")
         books.append((key.strip().upper()[:6], url.strip().rstrip("/")))
     if not books:
-        raise DashboardError("PAPER_BOOKS is empty")
+        raise DashboardError("PAPER_BOOKS is not set (e.g. MAIN=http://127.0.0.1:8000)")
     return books
 
 
@@ -118,7 +115,7 @@ def _closes(rows: list[dict[str, Any]]) -> tuple[list[float], date | None]:
     return [by_session[key] for key in sorted(by_session)], date.fromisoformat(first) if first else None
 
 
-def parse_book(key: str, status: dict[str, Any]) -> PaperBook:
+def parse_book(key: str, status: dict[str, Any], labels: dict[str, str] | None = None) -> PaperBook:
     if status.get("mode") != "PAPER_ONLY":
         raise DashboardError(f"{key}: refusing a book that is not PAPER_ONLY")
     health = status.get("health") or {}
@@ -135,7 +132,7 @@ def parse_book(key: str, status: dict[str, Any]) -> PaperBook:
         if first:
             starts.append(first)
         day_pct = (closes[-1] / closes[-2] - 1) * 100 if len(closes) >= 2 and closes[-2] else None
-        account = PaperAccount(account_id, label_for(account_id), equity, initial, bool(raw.get("halted")),
+        account = PaperAccount(account_id, label_for(account_id, labels or {}), equity, initial, bool(raw.get("halted")),
                                closes[-60:], day_pct)
         if account_id in BENCHMARKS:
             benchmarks[BENCHMARKS[account_id]] = account.total_pct
@@ -185,13 +182,13 @@ def paper_policy() -> RefreshPolicy:
 
 
 def collect(books: list[tuple[str, str]], previous: dict[str, PaperBook], *, now: datetime,
-            fetch: GetJson = get_json) -> PaperBoard:
+            fetch: GetJson = get_json, labels: dict[str, str] | None = None) -> PaperBoard:
     """Read every book; an unreachable book keeps its last rows but is flagged."""
     due = expected_session(now, paper_policy()).session
     result = []
     for key, url in books:
         try:
-            book = parse_book(key, fetch(f"{url}/api/status"))
+            book = parse_book(key, fetch(f"{url}/api/status"), labels)
         except DashboardError as exc:
             old = previous.get(key)
             book = PaperBook.from_json(old.to_json()) if old else PaperBook(key, None, None)
@@ -212,9 +209,10 @@ class PaperOutcome:
 
 def run_paper_once(previous: dict[str, PaperBook], displayed: str | None, *, now: datetime,
                    books: list[tuple[str, str]], show: Callable[[PaperBoard], None],
-                   fetch: GetJson = get_json, force: bool = False) -> tuple[PaperBoard, PaperOutcome]:
+                   fetch: GetJson = get_json, force: bool = False,
+                   labels: dict[str, str] | None = None) -> tuple[PaperBoard, PaperOutcome]:
     """Collect, and show only when the screen's meaning changed. Caller persists the board."""
-    board = collect(books, previous, now=now, fetch=fetch)
+    board = collect(books, previous, now=now, fetch=fetch, labels=labels)
     detail = f"data {board.data_session}, due {board.due_session}"
     if board.fingerprint() == displayed and not force:
         return board, PaperOutcome(False, board.problems, detail)

@@ -32,7 +32,11 @@ ZECTRIX_PAGE_ID=1
 
 # Paper-broker page (local read-only dashboards; pushed to its own page).
 PAPER_PAGE_ID=2
-# PAPER_BOOKS=PROD=http://127.0.0.1:8877,EXP=http://127.0.0.1:8878,LAB=http://127.0.0.1:8879
+# These may also live in a separate non-secret paper.env next to this file.
+# Comma-separated KEY=loopback URL of each paper dashboard exposing /api/status.
+# PAPER_BOOKS=MAIN=http://127.0.0.1:8000,TEST=http://127.0.0.1:8001
+# Optional short display names: account_id=NAME,...
+# PAPER_LABELS=trend_a=TREND A,carry_b=CARRY B
 # Flag a book whose runner has not committed the session this long after the close.
 PAPER_STALE_AFTER_MINUTES=240
 
