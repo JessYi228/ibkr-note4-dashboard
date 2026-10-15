@@ -1,6 +1,6 @@
 """Deterministic 400x300 one-bit dashboard renderer.
 
-Layout, pixel digits and P&L badges are adapted from ibkr-note4-dashboard (MIT,
+Layout and pixel digits are adapted from ibkr-note4-dashboard (MIT,
 see NOTICE). New here: the header always carries the broker data date and the
 fetch time, and an inverted STALE banner replaces it when data is overdue.
 """
@@ -128,23 +128,37 @@ def _fit(draw: ImageDraw.ImageDraw, value: str, font, width: int) -> str:
     return value + "..."
 
 
-def _pnl_badge(draw: ImageDraw.ImageDraw, pnl: float | None, box: tuple[int, int, int, int], font) -> None:
-    left, top, right, bottom = box
-    positive = pnl is not None and pnl > 0
-    foreground, background = (255, 0) if positive else (0, 255)
-    draw.rounded_rectangle(box, radius=3, fill=background, outline=0, width=1)
-    middle = (top + bottom) // 2
-    label = "N/A" if pnl is None else (f"{pnl:+,.2f}" if pnl else "0.00")
-    tb = draw.textbbox((0, 0), label, font=font)
-    group_left = left + ((right - left + 1) - (16 + 5 + tb[2] - tb[0])) // 2
-    if pnl is None or pnl == 0:
-        points = [(group_left, middle), (group_left + 16, middle)]
-    elif positive:
-        points = [(group_left, middle + 5), (group_left + 7, middle + 2), (group_left + 16, middle - 4)]
+def _arrow(draw: ImageDraw.ImageDraw, x: int, cy: int, value: float | None, fill: int = 0) -> None:
+    """Solid 7x5 triangle: up for gains, down for losses, dash for flat/unknown."""
+    if value is not None and value > 0:
+        draw.polygon([(x, cy + 2), (x + 6, cy + 2), (x + 3, cy - 2)], fill=fill)
+    elif value is not None and value < 0:
+        draw.polygon([(x, cy - 2), (x + 6, cy - 2), (x + 3, cy + 2)], fill=fill)
     else:
-        points = [(group_left, middle - 5), (group_left + 7, middle - 2), (group_left + 16, middle + 4)]
-    draw.line(points, fill=foreground, width=1)
-    _text(draw, (group_left + 21, top + (bottom - top - (tb[3] - tb[1])) // 2 - tb[1]), label, font, foreground)
+        draw.line((x + 1, cy, x + 5, cy), fill=fill)
+
+
+def _right(draw: ImageDraw.ImageDraw, right: float, y: float, value: str, font, fill: int = 0) -> None:
+    _text(draw, (right - draw.textlength(value, font=font), y), value, font, fill)
+
+
+def _signed(value: float | None) -> str:
+    if value is None:
+        return "N/A"
+    if abs(value) >= 10_000:
+        return f"{value / 1_000:+,.1f}K"
+    return f"{value:+,.2f}" if value else "0.00"
+
+
+def _pct(value: float | None) -> str:
+    return "" if value is None else f"{value:+.2f}%"
+
+
+def _change_pct(change: float | None, current: float | None) -> float | None:
+    """Change relative to the value before the change (day open or cost)."""
+    if change is None or current is None or not current - change:
+        return None
+    return change / abs(current - change) * 100
 
 
 def _trend(draw: ImageDraw.ImageDraw, values: list[float], box: tuple[int, int, int, int], font) -> None:
@@ -210,10 +224,16 @@ def render_png(snapshot: Snapshot, banner: Banner, *, tz: ZoneInfo, max_position
 
     draw.text((12, 41), "NET LIQUIDATION", font=fonts["r10"], fill=0)
     draw.text((12, 54), money(snapshot.net_liquidation, currency, compact=True), font=fonts["bold25"], fill=0)
-    _text(draw, (12, 86), f"DAY  {money(snapshot.daily_pnl, currency, compact=True, signed=True)}", fonts["bold12"], 0)
-    _text(draw, (12, 104), f"UNREAL  {money(snapshot.unrealized_pnl, currency, compact=True, signed=True, symbol=False)}", fonts["r10"], 0)
-    day_pct = "N/A" if snapshot.daily_pnl_pct is None else f"{snapshot.daily_pnl_pct:+.2f}%"
-    _text(draw, (12, 120), f"DAY %  {day_pct}", fonts["r10"], 0)
+    draw.text((12, 86), "DAY", font=fonts["bold12"], fill=0)
+    _arrow(draw, 44, 93, snapshot.daily_pnl)
+    if snapshot.daily_pnl is None:
+        _text(draw, (56, 88), "N/A - ADD DAILY FLEX QUERY", fonts["r10"], 0)
+    else:
+        day = f"{money(snapshot.daily_pnl, currency, compact=True, signed=True)}  {_pct(snapshot.daily_pnl_pct)}"
+        _text(draw, (56, 86), day, fonts["bold12"], 0)
+    unreal = money(snapshot.unrealized_pnl, currency, compact=True, signed=True, symbol=False)
+    _text(draw, (12, 104), f"UNREAL  {unreal}", fonts["r10"], 0)
+    _text(draw, (12, 120), f"CASH  {money(snapshot.cash, currency, compact=True, symbol=False)}", fonts["r10"], 0)
 
     title = f"{len(snapshot.nav_history)}D NAV ({currency})" if snapshot.nav_history else f"NAV ({currency})"
     _text(draw, (320 - draw.textlength(title, font=fonts["bold12"]) // 2, 39), title, fonts["bold12"], 0)
@@ -221,27 +241,34 @@ def render_png(snapshot: Snapshot, banner: Banner, *, tz: ZoneInfo, max_position
 
     draw.rectangle((10, 150, 390, 272), outline=0, width=1)
     draw.rectangle((10, 150, 390, 172), fill=0)
-    for x, label in ((18, "STOCK"), (92, "POSITION"), (188, "PRICE"), (300, "DAY P&L")):
-        draw.text((x, 155), label, font=fonts["bold12"], fill=255)
-    positions = sorted(snapshot.positions, key=lambda p: abs(p.market_value or 0.0), reverse=True)[:max_positions]
+    positions = sorted(snapshot.positions, key=lambda p: abs(p.market_value or 0.0), reverse=True)[:min(max_positions, 4)]
+    # Without the optional daily Flex query there is no per-position day P&L;
+    # show unrealized P&L (vs cost) under its own heading instead of a column of N/A.
+    daily = any(p.daily_pnl is not None for p in positions)
+    heading = "DAY P&L" if daily else "UNREAL P&L"
+    draw.text((18, 155), "STOCK", font=fonts["bold12"], fill=255)
+    for right, label in ((122, "QTY"), (200, "PRICE"), (382, heading)):
+        draw.text((right - draw.textlength(label, font=fonts["bold12"]), 155), label, font=fonts["bold12"], fill=255)
     if not positions:
         draw.text((18, 182), "No open positions", font=fonts["r12"], fill=0)
-    for index, position in enumerate(positions[:4]):
+    for index, position in enumerate(positions):
         row_top = 176 + index * 23
-        draw.text((18, row_top + 2), position.symbol, font=fonts["bold12"], fill=0)
-        _text(draw, (110, row_top + 2), _quantity(position.quantity), fonts["r12"], 0)
-        price = "N/A" if position.market_price is None else f"{position.market_price:,.2f}"
-        _text(draw, (188, row_top + 2), price, fonts["r12"], 0)
-        _pnl_badge(draw, position.daily_pnl, (286, row_top, 382, row_top + 19), fonts["r10"])
-        if index < len(positions[:4]) - 1:
+        y = row_top + 2
+        draw.text((18, y), position.symbol, font=fonts["bold12"], fill=0)
+        _right(draw, 122, y, _quantity(position.quantity), fonts["r12"])
+        _right(draw, 200, y, "N/A" if position.market_price is None else f"{position.market_price:,.2f}", fonts["r12"])
+        change = position.daily_pnl if daily else position.unrealized_pnl
+        amount = _signed(change)
+        _right(draw, 310, y, amount, fonts["r12"])
+        _arrow(draw, round(310 - draw.textlength(amount, font=fonts["r12"])) - 11, y + 8, change)
+        _right(draw, 382, y + 1, _pct(_change_pct(change, position.market_value)), fonts["r10"])
+        if index < len(positions) - 1:
             draw.line((18, row_top + 21, 382, row_top + 21), fill=0, width=1)
 
     change = snapshot.period_change_pct
-    window = f"{len(snapshot.nav_history)}D" if snapshot.nav_history else ""
-    footer = f"CASH {money(snapshot.cash, currency, compact=True, symbol=False)} {currency}"
     if change is not None:
-        footer += f" · {window} NAV {change:+.2f}% (INCL. DEPOSITS)"
-    _text(draw, (12, 280), _fit(draw, footer, fonts["r10"], WIDTH - 24), fonts["r10"], 0)
+        footer = f"{len(snapshot.nav_history)}D NAV CHANGE {change:+.2f}% (INCLUDES DEPOSITS/WITHDRAWALS)"
+        _text(draw, (12, 280), _fit(draw, footer, fonts["r10"], WIDTH - 24), fonts["r10"], 0)
 
     buffer = io.BytesIO()
     image.convert("1", dither=Image.Dither.NONE).save(buffer, format="PNG", optimize=True)

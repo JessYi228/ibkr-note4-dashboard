@@ -15,7 +15,7 @@
 
 ## 屏幕
 
-左：正常；右：数据过期（虚构样例数据）。
+左：正常；右：数据过期（虚构样例数据）。没配置日盈亏查询时，持仓表改为显示未实现盈亏（[示例](docs/preview-no-daily-query.png)）。
 
 ![preview](docs/preview-compare.png)
 

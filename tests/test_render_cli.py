@@ -74,3 +74,19 @@ def test_zectrix_push_shape():
     assert url.endswith("/open/v1/devices/AA%3ABB/display/image")
     assert kwargs["method"] == "POST" and kwargs["headers"]["X-API-Key"] == "key"
     assert b'name="pageId"\r\n\r\n2' in kwargs["data"] and b'name="dither"\r\n\r\nfalse' in kwargs["data"]
+
+
+def test_change_pct_is_relative_to_value_before_change():
+    from ibkr_zectrix_dashboard.render import _change_pct, _signed
+
+    assert _change_pct(14.02, 2285.63) == pytest.approx(14.02 / (2285.63 - 14.02) * 100)
+    assert _change_pct(None, 100.0) is None and _change_pct(5.0, 5.0) is None
+    assert (_signed(-1.1), _signed(0.0), _signed(12_345.0), _signed(None)) == ("-1.10", "0.00", "+12.3K", "N/A")
+
+
+def test_renders_without_daily_query():
+    snapshot = _sample()
+    snapshot.daily_pnl = None
+    for position in snapshot.positions:
+        position.daily_pnl = None
+    assert image(render_png(snapshot, Banner("ok", NOW), tz=TZ)).size == (400, 300)
