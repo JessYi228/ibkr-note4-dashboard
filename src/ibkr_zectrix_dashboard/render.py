@@ -12,7 +12,7 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from . import drawing as d
-from .snapshot import Snapshot
+from .snapshot import Position, Snapshot
 
 
 @dataclass(frozen=True)
@@ -50,6 +50,16 @@ def _quantity(value: float) -> str:
     if abs(value) >= 10_000:
         return f"{value / 1_000:.1f}K"
     return f"{value:,.0f}" if value.is_integer() else f"{value:,.4f}".rstrip("0").rstrip(".")
+
+
+def select_positions(positions: list[Position], daily: bool, limit: int) -> list[Position]:
+    """The biggest movers: largest absolute % change (day, or vs cost without daily data)."""
+    def magnitude(position: Position) -> tuple[float, float]:
+        change = position.daily_pnl if daily else position.unrealized_pnl
+        percent = d.change_pct(change, position.market_value)
+        return (abs(percent) if percent is not None else -1.0, abs(position.market_value or 0.0))
+
+    return sorted(positions, key=magnitude, reverse=True)[:limit]
 
 
 def _header(draw, snapshot: Snapshot, banner: Banner, tz: ZoneInfo, fonts: dict) -> None:
@@ -92,10 +102,10 @@ def render_png(snapshot: Snapshot, banner: Banner, *, tz: ZoneInfo, max_position
 
     draw.rectangle((10, 150, 390, 272), outline=0, width=1)
     draw.rectangle((10, 150, 390, 172), fill=0)
-    positions = sorted(snapshot.positions, key=lambda p: abs(p.market_value or 0.0), reverse=True)[:min(max_positions, 4)]
     # Without the optional daily Flex query there is no per-position day P&L;
     # show unrealized P&L (vs cost) under its own heading instead of a column of N/A.
-    daily = any(p.daily_pnl is not None for p in positions)
+    daily = any(p.daily_pnl is not None for p in snapshot.positions)
+    positions = select_positions(snapshot.positions, daily, min(max_positions, 4))
     heading = "DAY P&L" if daily else "UNREAL P&L"
     draw.text((18, 155), "STOCK", font=fonts["bold12"], fill=255)
     for x_right, label in ((122, "QTY"), (200, "PRICE"), (382, heading)):
@@ -114,5 +124,9 @@ def render_png(snapshot: Snapshot, banner: Banner, *, tz: ZoneInfo, max_position
         if index < len(positions) - 1:
             draw.line((18, row_top + 21, 382, row_top + 21), fill=0, width=1)
 
-    d.text(draw, (12, 280), "NAV CHART AND % INCLUDE DEPOSITS/WITHDRAWALS", fonts["r10"])
+    footer = "NAV CHART AND % INCLUDE DEPOSITS/WITHDRAWALS"
+    if len(snapshot.positions) > len(positions):
+        basis = "DAY %" if daily else "P&L %"
+        footer = f"BIGGEST {len(positions)} OF {len(snapshot.positions)} BY {basis} · NAV % INCL. DEPOSITS"
+    d.text(draw, (12, 280), d.fit(draw, footer, fonts["r10"], 376), fonts["r10"])
     return d.to_png(image)

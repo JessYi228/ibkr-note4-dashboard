@@ -97,3 +97,18 @@ def test_window_label_counts_calendar_days_not_trading_days():
     assert len(snapshot.nav_history) == 21 and snapshot.window_label == "29D"
     snapshot.window_days = 30
     assert snapshot.window_label == "30D"
+
+
+def test_table_shows_biggest_percent_movers():
+    from ibkr_zectrix_dashboard.render import select_positions
+    from ibkr_zectrix_dashboard.snapshot import Position
+
+    positions = [
+        Position("BIG", 10, 100.0, 10_000.0, daily_pnl=50.0),   # +0.50%
+        Position("JUMP", 1, 20.0, 20.0, daily_pnl=2.0),         # +11.1%
+        Position("DROP", 1, 30.0, 30.0, daily_pnl=-3.0),        # -9.1%
+        Position("FLAT", 1, 50.0, 50.0, daily_pnl=0.0),
+        Position("MID", 5, 40.0, 200.0, daily_pnl=-4.0),        # -1.96%
+        Position("NONE", 1, 10.0, 10.0, daily_pnl=None),
+    ]
+    assert [p.symbol for p in select_positions(positions, True, 4)] == ["JUMP", "DROP", "MID", "BIG"]
